@@ -1,0 +1,61 @@
+<aside class="col-lg-3 col-xl-2 gi-sidebar p-3">
+  <div class="mb-3 px-2">
+    <div class="small text-muted">Active Branch</div>
+    <div class="fw-semibold" style="color: var(--gi-navy);">
+      {% if selected_branch %}{{ selected_branch.code }} – {{ exam_year }}{% else %}Not Selected{% endif %}
+    </div>
+  </div>
+  <nav class="nav flex-column">
+    <a class="nav-link {% if request.endpoint == 'student.dashboard' %}active{% endif %}" href="{{ url_for('student.dashboard') }}">
+      <span><i class="bi bi-speedometer2 me-2"></i>Dashboard</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'student.syllabus' %}active{% endif %}" href="{{ url_for('student.syllabus') }}">
+      <span><i class="bi bi-diagram-3 me-2"></i>Syllabus Explorer</span>
+    </a>
+    <a class="nav-link {% if request.blueprint == 'assessments' and request.endpoint == 'assessments.configure' %}active{% endif %}" href="{{ url_for('assessments.configure') }}">
+      <span><i class="bi bi-pencil-square me-2"></i>Take a Test</span>
+    </a>
+    <a class="nav-link {% if request.blueprint == 'questions' and request.endpoint == 'questions.bank' %}active{% endif %}" href="{{ url_for('questions.bank') }}">
+      <span><i class="bi bi-journal-text me-2"></i>Question Bank</span>
+    </a>
+    <a class="nav-link" href="{{ url_for('assessments.configure', mode='subject', question_source='PYQ') }}">
+      <span><i class="bi bi-archive me-2"></i>PYQ Practice</span>
+    </a>
+    <a class="nav-link" href="{{ url_for('assessments.configure', mode='subject', question_source='AI_GENERATED') }}">
+      <span><i class="bi bi-stars me-2"></i>AI Practice</span>
+    </a>
+    <a class="nav-link" href="{{ url_for('assessments.configure', mode='full_mock') }}">
+      <span><i class="bi bi-stopwatch me-2"></i>Full Mock Tests</span>
+    </a>
+    <a class="nav-link" href="{{ url_for('assessments.daily_challenge') }}">
+      <span><i class="bi bi-lightning-charge me-2"></i>Daily Challenge</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'analytics.performance' %}active{% endif %}" href="{{ url_for('analytics.performance') }}">
+      <span><i class="bi bi-graph-up me-2"></i>My Performance</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'analytics.advisor' %}active{% endif %}" href="{{ url_for('analytics.advisor') }}">
+      <span><i class="bi bi-lightbulb me-2"></i>AI Advisor</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'analytics.revision' %}active{% endif %}" href="{{ url_for('analytics.revision') }}">
+      <span><i class="bi bi-calendar2-check me-2"></i>My Revision</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'analytics.formulas' %}active{% endif %}" href="{{ url_for('analytics.formulas') }}">
+      <span><i class="bi bi-calculator me-2"></i>Formula Library</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'questions.error_notebook' %}active{% endif %}" href="{{ url_for('questions.error_notebook') }}">
+      <span><i class="bi bi-exclamation-diamond me-2"></i>Error Notebook</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'questions.bookmarks' %}active{% endif %}" href="{{ url_for('questions.bookmarks') }}">
+      <span><i class="bi bi-bookmark me-2"></i>Bookmarks</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'assessments.history' %}active{% endif %}" href="{{ url_for('assessments.history') }}">
+      <span><i class="bi bi-clock-history me-2"></i>Test History</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'analytics.readiness' %}active{% endif %}" href="{{ url_for('analytics.readiness') }}">
+      <span><i class="bi bi-award me-2"></i>GATE Readiness</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'student.profile' %}active{% endif %}" href="{{ url_for('student.profile') }}">
+      <span><i class="bi bi-gear me-2"></i>Profile &amp; Settings</span>
+    </a>
+  </nav>
+</aside>

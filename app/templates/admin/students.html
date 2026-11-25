@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Student Management | Admin{% endblock %}
+
+{% block layout_body %}
+  {% include "admin/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Student Accounts</h2>
+    <p class="text-muted mb-4">View registered students and manage account access.</p>
+
+    <div class="gi-card p-4">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Branch &amp; Year</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in students %}
+              <tr>
+                <td class="fw-medium">{{ s.full_name }}</td>
+                <td>{{ s.email }}</td>
+                <td>
+                  {% if s.student_profile and s.student_profile.selected_branch %}
+                    <span class="badge gi-badge-branch">{{ s.student_profile.selected_branch.code }}</span>
+                    {{ s.student_profile.target_exam_year }}
+                  {% else %}
+                    &mdash;
+                  {% endif %}
+                </td>
+                <td><span class="badge {{ 'bg-success' if s.is_active else 'bg-danger' }}">{{ 'Active' if s.is_active else 'Suspended' }}</span></td>
+                <td>
+                  <form method="post" action="{{ url_for('admin.students') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="user_id" value="{{ s.id }}">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Toggle Status</button>
+                  </form>
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="5" class="text-muted text-center py-4">No students registered yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}{{ module_title }} | GATE Intelligence{% endblock %}
+
+{% block layout_body %}
+  {% include "student/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    <div class="gi-card p-5 text-center mx-auto" style="max-width: 620px;">
+      <span class="badge gi-badge-branch mb-3">{{ phase_label }}</span>
+      <h3 class="fw-bold mb-2" style="color: var(--gi-navy);">{{ module_title }}</h3>
+      <p class="text-muted mb-4">
+        Your Phase 1 foundation (authentication, branch selection, and syllabus hierarchy) is active. This module will be activated in <strong>{{ phase_label }}</strong>.
+      </p>
+      <div class="d-flex justify-content-center gap-2">
+        <a href="{{ url_for('student.dashboard') }}" class="btn btn-gi-primary">Back to Dashboard</a>
+        <a href="{{ url_for('student.syllabus') }}" class="btn btn-outline-secondary">Explore Syllabus</a>
+      </div>
+    </div>
+  </main>
+{% endblock %}

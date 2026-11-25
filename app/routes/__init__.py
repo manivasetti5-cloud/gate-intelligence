@@ -1,0 +1,1 @@
+"""Flask Blueprint registration package."""

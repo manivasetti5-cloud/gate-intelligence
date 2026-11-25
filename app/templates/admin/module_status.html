@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ module_title }} | Admin{% endblock %}
+
+{% block layout_body %}
+  {% include "admin/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    <div class="gi-card p-5 text-center mx-auto" style="max-width: 620px;">
+      <span class="badge bg-dark mb-3">{{ phase_label }}</span>
+      <h3 class="fw-bold mb-2" style="color: var(--gi-navy);">{{ module_title }}</h3>
+      <p class="text-muted mb-4">
+        Phase 1 foundation modules (admin auth, branch management, syllabus versions, exam patterns, and audit logs) are active. This module activates in <strong>{{ phase_label }}</strong>.
+      </p>
+      <a href="{{ url_for('admin.overview') }}" class="btn btn-gi-primary">Back to Overview</a>
+    </div>
+  </main>
+{% endblock %}

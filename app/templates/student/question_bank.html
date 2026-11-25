@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Question Bank | GATE Intelligence{% endblock %}
+
+{% block layout_body %}
+  {% include "student/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+      <div>
+        <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Question Bank ({{ selected_branch.code if selected_branch else '' }})</h2>
+        <p class="text-muted mb-0">Filter verified historical GATE PYQs and AI-generated practice questions.</p>
+      </div>
+      <a href="{{ url_for('assessments.configure') }}" class="btn btn-gi-primary btn-sm">Launch Custom Test</a>
+    </div>
+
+    <form method="get" action="{{ url_for('questions.bank') }}" class="gi-card p-3 mb-4">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small fw-medium">Subject</label>
+          <select name="subject_id" class="form-select form-select-sm">
+            <option value="">All Subjects</option>
+            {% for s in subjects %}
+              <option value="{{ s.id }}" {% if filters.subject_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-medium">Source</label>
+          <select name="source_type" class="form-select form-select-sm">
+            <option value="ALL" {% if filters.source_type == 'ALL' %}selected{% endif %}>All Sources</option>
+            <option value="PYQ" {% if filters.source_type == 'PYQ' %}selected{% endif %}>Historical PYQ</option>
+            <option value="AI_GENERATED" {% if filters.source_type == 'AI_GENERATED' %}selected{% endif %}>AI Generated</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-medium">Type</label>
+          <select name="question_type" class="form-select form-select-sm">
+            <option value="ALL" {% if filters.question_type == 'ALL' %}selected{% endif %}>All</option>
+            <option value="MCQ" {% if filters.question_type == 'MCQ' %}selected{% endif %}>MCQ</option>
+            <option value="MSQ" {% if filters.question_type == 'MSQ' %}selected{% endif %}>MSQ</option>
+            <option value="NAT" {% if filters.question_type == 'NAT' %}selected{% endif %}>NAT</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-medium">Search</label>
+          <input class="form-control form-control-sm" name="q" value="{{ filters.q }}" placeholder="Keyword...">
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-sm btn-gi-primary w-100">Filter</button>
+        </div>
+      </div>
+    </form>
+
+    {% for q in pagination.items %}
+      <div class="gi-card p-4 mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+          <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="badge gi-badge-branch">{{ q.source.source_type }}</span>
+            <span class="badge bg-light text-dark border">{{ q.question_type }} &middot; {{ q.marks }}M</span>
+            <span class="badge bg-light text-dark border">{{ q.difficulty|title }}</span>
+            <span class="small text-muted">{{ q.subject.name if q.subject else '' }} {% if q.topic %}&rsaquo; {{ q.topic.name }}{% endif %}</span>
+          </div>
+          <form method="post" action="{{ url_for('questions.toggle_bookmark', question_id=q.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm {{ 'btn-warning' if q.id in bookmarked_ids else 'btn-outline-secondary' }}">
+              <i class="bi bi-bookmark{{ '-fill' if q.id in bookmarked_ids else '' }}"></i>
+            </button>
+          </form>
+        </div>
+        <p class="mb-2" style="white-space: pre-wrap;">{{ q.statement_md }}</p>
+        {% if q.options %}
+          <div class="row g-2 small text-muted mb-2">
+            {% for opt in q.options %}
+              <div class="col-md-6">({{ opt.label }}) {{ opt.option_text_md }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <div class="small text-muted">{{ q.source.attribution_text or '' }}</div>
+      </div>
+    {% else %}
+      <div class="gi-card p-4 text-center text-muted">
+        No questions match the selected filter. If you filtered for PYQs, ask your administrator to import or upload historical GATE papers.
+      </div>
+    {% endfor %}
+
+    {% if pagination.pages > 1 %}
+      <nav>
+        <ul class="pagination pagination-sm">
+          {% if pagination.has_prev %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('questions.bank', page=pagination.prev_num, source_type=filters.source_type, question_type=filters.question_type, subject_id=filters.subject_id, q=filters.q) }}">Previous</a></li>
+          {% endif %}
+          <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} of {{ pagination.pages }}</span></li>
+          {% if pagination.has_next %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('questions.bank', page=pagination.next_num, source_type=filters.source_type, question_type=filters.question_type, subject_id=filters.subject_id, q=filters.q) }}">Next</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </main>
+{% endblock %}

@@ -1,0 +1,105 @@
+:root {
+  --gi-navy: #0f2447;
+  --gi-navy-soft: #1a3668;
+  --gi-accent: #1d63dc;
+  --gi-bg: #f5f7fb;
+  --gi-card: #ffffff;
+  --gi-border: #e1e6f0;
+  --gi-text: #1b2538;
+  --gi-muted: #5e6c84;
+  --gi-success: #16803c;
+  --gi-danger: #c62828;
+}
+
+body {
+  background-color: var(--gi-bg);
+  color: var(--gi-text);
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+.gi-navbar {
+  background-color: var(--gi-navy);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gi-sidebar {
+  background-color: var(--gi-card);
+  border-right: 1px solid var(--gi-border);
+  min-height: calc(100vh - 56px);
+}
+
+.gi-sidebar .nav-link {
+  color: var(--gi-text);
+  font-size: 0.92rem;
+  font-weight: 500;
+  border-radius: 0.45rem;
+  padding: 0.55rem 0.85rem;
+  margin-bottom: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gi-sidebar .nav-link:hover {
+  background-color: #eef3fb;
+  color: var(--gi-navy);
+}
+
+.gi-sidebar .nav-link.active {
+  background-color: var(--gi-navy);
+  color: #ffffff;
+}
+
+.gi-card {
+  background-color: var(--gi-card);
+  border: 1px solid var(--gi-border);
+  border-radius: 0.65rem;
+  box-shadow: 0 1px 3px rgba(15, 36, 71, 0.04);
+}
+
+.gi-stat-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gi-muted);
+  font-weight: 600;
+}
+
+.gi-stat-value {
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--gi-navy);
+}
+
+.btn-gi-primary {
+  background-color: var(--gi-accent);
+  border-color: var(--gi-accent);
+  color: #ffffff;
+}
+
+.btn-gi-primary:hover {
+  background-color: #1552bc;
+  border-color: #1552bc;
+  color: #ffffff;
+}
+
+.gi-badge-branch {
+  background-color: #e8f0fe;
+  color: var(--gi-navy);
+  font-weight: 600;
+  border: 1px solid #c7dafc;
+}
+
+.gi-phase-tag {
+  font-size: 0.68rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  background-color: #eef1f7;
+  color: var(--gi-muted);
+}
+
+.gi-auth-shell {
+  max-width: 480px;
+  margin: 3rem auto;
+}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Syllabus Management | Admin{% endblock %}
+
+{% block layout_body %}
+  {% include "admin/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+      <div>
+        <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Syllabus Version &amp; Hierarchy Management</h2>
+        <p class="text-muted mb-0">Inspect or extend Subject &rarr; Chapter &rarr; Topic &rarr; Concept mappings per year.</p>
+      </div>
+      <form method="get" action="{{ url_for('admin.syllabus') }}" class="d-flex gap-2">
+        <select name="version_id" class="form-select form-select-sm" onchange="this.form.submit()">
+          {% for v in versions %}
+            <option value="{{ v.id }}" {% if selected_version and v.id == selected_version.id %}selected{% endif %}>
+              {{ v.branch.code }} – GATE {{ v.exam_year }} ({{ v.version_label }})
+            </option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-8">
+        {% if selected_version %}
+          <div class="gi-card p-3 mb-3 small d-flex justify-content-between flex-wrap gap-2">
+            <div>
+              <strong>{{ selected_version.branch.code }} {{ selected_version.exam_year }}</strong> &middot;
+              {{ selected_version.syllabus_source }} &middot;
+              Effective {{ selected_version.effective_date }}
+            </div>
+            <div class="text-muted">
+              {{ counts.subjects }} Subjects &middot; {{ counts.chapters }} Chapters &middot; {{ counts.topics }} Topics &middot; {{ counts.concepts }} Concepts
+            </div>
+          </div>
+
+          <div class="gi-card p-4">
+            {% for subj in subjects %}
+              <div class="mb-4 pb-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="fw-bold mb-0"><span class="badge bg-light text-dark border me-2">{{ subj.code }}</span>{{ subj.name }}</h6>
+                  <span class="small text-muted">{{ subj.chapters|length }} chapters</span>
+                </div>
+                {% for ch in subj.chapters %}
+                  <div class="ms-3 mt-2">
+                    <div class="fw-semibold small">{{ ch.name }}</div>
+                    <div class="ms-3 small text-muted">
+                      {% for tp in ch.topics %}
+                        <div>&bull; {{ tp.name }} ({{ tp.concepts|length }} concepts)</div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-muted mb-0">No subjects added to this syllabus version yet.</p>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="gi-card p-4 text-muted">No syllabus versions available. Create one using the panel on the right.</div>
+        {% endif %}
+      </div>
+
+      <div class="col-lg-4">
+        <div class="gi-card p-4 mb-3">
+          <h6 class="fw-semibold mb-3">Create Syllabus Version</h6>
+          <form method="post" action="{{ url_for('admin.syllabus') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="create_version">
+            <div class="mb-2">
+              <label class="form-label small">Branch</label>
+              <select class="form-select form-select-sm" name="branch_id" required>
+                {% for b in branches %}
+                  <option value="{{ b.id }}">{{ b.code }} – {{ b.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="row g-2 mb-2">
+              <div class="col-6">
+                <label class="form-label small">Exam Year</label>
+                <input class="form-control form-control-sm" type="number" name="exam_year" value="2027" required>
+              </div>
+              <div class="col-6">
+                <label class="form-label small">Version Label</label>
+                <input class="form-control form-control-sm" name="version_label" value="Official v1.0" required>
+              </div>
+            </div>
+            <div class="mb-2">
+              <label class="form-label small">Syllabus Source</label>
+              <input class="form-control form-control-sm" name="syllabus_source" placeholder="Official GATE Brochure" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label small">Effective Date</label>
+              <input class="form-control form-control-sm" type="date" name="effective_date">
+            </div>
+            <button type="submit" class="btn btn-sm btn-gi-primary w-100">Create Version</button>
+          </form>
+        </div>
+
+        {% if selected_version %}
+        <div class="gi-card p-4">
+          <h6 class="fw-semibold mb-3">Add Subject to {{ selected_version.branch.code }} {{ selected_version.exam_year }}</h6>
+          <form method="post" action="{{ url_for('admin.syllabus') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="add_subject">
+            <input type="hidden" name="syllabus_version_id" value="{{ selected_version.id }}">
+            <div class="mb-2">
+              <input class="form-control form-control-sm" name="code" placeholder="Subject Code (e.g. CS-AI)" required>
+            </div>
+            <div class="mb-2">
+              <input class="form-control form-control-sm" name="name" placeholder="Subject Name" required>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" name="is_general_aptitude" id="isGa">
+              <label class="form-check-label small" for="isGa">General Aptitude section</label>
+            </div>
+            <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add Subject</button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+{% endblock %}

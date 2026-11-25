@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Platform Analytics | Admin{% endblock %}
+
+{% block layout_body %}
+  {% include "admin/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Platform Analytics</h2>
+    <p class="text-muted mb-4">Question bank distribution, verification coverage, and student assessment activity.</p>
+
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-xl-3"><div class="gi-card p-3"><div class="gi-stat-label">Total Questions</div><div class="gi-stat-value mt-1">{{ metrics.total_questions }}</div></div></div>
+      <div class="col-sm-6 col-xl-3"><div class="gi-card p-3"><div class="gi-stat-label">Verified Questions</div><div class="gi-stat-value mt-1">{{ metrics.verified_questions }}</div></div></div>
+      <div class="col-sm-6 col-xl-3"><div class="gi-card p-3"><div class="gi-stat-label">Submitted Attempts</div><div class="gi-stat-value mt-1">{{ metrics.total_attempts }}</div></div></div>
+      <div class="col-sm-6 col-xl-3"><div class="gi-card p-3"><div class="gi-stat-label">Avg Platform Accuracy</div><div class="gi-stat-value mt-1">{{ metrics.avg_platform_accuracy }}%</div></div></div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="gi-card p-4">
+          <h5 class="fw-semibold mb-3">Questions by GATE Branch</h5>
+          <canvas id="branchChart" height="170"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="gi-card p-4">
+          <h5 class="fw-semibold mb-3">Questions by Source Provenance</h5>
+          <canvas id="sourceChart" height="170"></canvas>
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  const bLabels = {{ metrics.by_branch | map(attribute='code') | list | tojson }};
+  const bCounts = {{ metrics.by_branch | map(attribute='questions') | list | tojson }};
+  const sLabels = {{ metrics.by_source | map(attribute='source') | list | tojson }};
+  const sCounts = {{ metrics.by_source | map(attribute='count') | list | tojson }};
+
+  new Chart(document.getElementById("branchChart"), {
+    type: "bar",
+    data: { labels: bLabels, datasets: [{ label: "Questions", data: bCounts, backgroundColor: "#0f2447" }] }
+  });
+
+  new Chart(document.getElementById("sourceChart"), {
+    type: "doughnut",
+    data: { labels: sLabels, datasets: [{ data: sCounts, backgroundColor: ["#1d63dc", "#16803c", "#64748b"] }] }
+  });
+})();
+</script>
+{% endblock %}

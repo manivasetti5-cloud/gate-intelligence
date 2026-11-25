@@ -1,0 +1,28 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Environment & Secrets
+.env
+*.local.env
+
+# Uploads & Runtime Artifacts
+app/static/uploads/papers/*
+app/static/uploads/extracted/*
+!app/static/uploads/papers/.gitkeep
+!app/static/uploads/extracted/.gitkeep
+instance/
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE & OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

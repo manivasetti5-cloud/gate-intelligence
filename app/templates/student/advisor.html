@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}AI Advisor | GATE Intelligence{% endblock %}
+
+{% block layout_body %}
+  {% include "student/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+      <div>
+        <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">AI Personalized Preparation Advisor</h2>
+        <p class="text-muted mb-0">Evidence-based recommendations generated from your complete test history.</p>
+      </div>
+      <form method="post" action="{{ url_for('analytics.advisor') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-gi-primary btn-sm">
+          <i class="bi bi-arrow-clockwise me-1"></i>Refresh Recommendations
+        </button>
+      </form>
+    </div>
+
+    {% if recommendation %}
+      {% set adv = recommendation.advice_json or {} %}
+      <div class="gi-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h5 class="fw-semibold mb-0">Performance Summary</h5>
+          <span class="badge bg-light text-dark border">{{ recommendation.model_used }}</span>
+        </div>
+        <p class="mb-0">{{ recommendation.summary_md }}</p>
+      </div>
+
+      <div class="row g-3 mb-4">
+        {% for label, key in [
+          ('Weak Topics Identified', '2_weak_topics'),
+          ('Strong Topics Identified', '3_strong_topics'),
+          ('Revision Recommendations', '4_revision_recommendations'),
+          ('Suggested Practice Questions', '5_suggested_practice'),
+          ('Time Management Advice', '6_time_management'),
+          ('Formula Recommendations', '7_formula_recommendations'),
+          ('Shortcut Recommendations', '8_shortcut_recommendations'),
+          ('Common Mistake Analysis', '9_common_mistake_analysis')
+        ] %}
+          <div class="col-md-6">
+            <div class="gi-card p-3 h-100">
+              <div class="gi-stat-label mb-1">{{ label }}</div>
+              <div class="small">{{ adv.get(key, '-') }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="gi-card p-4 mb-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <div class="gi-stat-label">Recommended Next Assessment</div>
+          <div class="fw-semibold">{{ adv.get('10_recommended_next_assessment', 'Targeted 20-question test') }}</div>
+        </div>
+        {% set cfg = recommendation.recommended_test_config_json or {} %}
+        <form method="post" action="{{ url_for('assessments.start') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="mode" value="{{ cfg.get('mode', 'subject') }}">
+          {% if cfg.get('subject_id') %}
+            <input type="hidden" name="subject_id" value="{{ cfg.get('subject_id') }}">
+          {% endif %}
+          <input type="hidden" name="question_count" value="{{ cfg.get('question_count', 20) }}">
+          <input type="hidden" name="selection_mode" value="{{ cfg.get('selection_mode', 'weak_topic') }}">
+          <button type="submit" class="btn btn-gi-primary">Launch Recommended Test</button>
+        </form>
+      </div>
+
+      {% if recommendation.suggested_formulas_json %}
+        <div class="gi-card p-4">
+          <h5 class="fw-semibold mb-3">Recommended Formulas to Revise</h5>
+          <div class="row g-3">
+            {% for f in recommendation.suggested_formulas_json %}
+              <div class="col-md-6">
+                <div class="p-3 bg-light rounded border h-100 small">
+                  <div class="fw-bold mb-1">{{ f.title }}</div>
+                  <code class="d-block mb-1">{{ f.formula }}</code>
+                  {% if f.shortcut %}<div class="text-muted">Shortcut: {{ f.shortcut }}</div>{% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+  </main>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}AI Question Generation | Admin{% endblock %}
+
+{% block layout_body %}
+  {% include "admin/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">AI Original Question Generator</h2>
+    <p class="text-muted mb-4">Generate original, syllabus-aligned GATE questions validated via schema checks and independent answer verification.</p>
+
+    {% if not llm_configured %}
+      <div class="alert alert-warning small">
+        <strong>LLM API Key Not Configured:</strong> Set <code>GEMINI_API_KEY</code> in <code>.env</code> to run live AI question generation.
+      </div>
+    {% endif %}
+
+    <div class="row g-4">
+      <div class="col-lg-5">
+        <div class="gi-card p-4">
+          <h5 class="fw-semibold mb-3">Launch Generation Job</h5>
+          <form method="get" action="{{ url_for('admin.ai_generation') }}" class="mb-3">
+            <label class="form-label small fw-medium">Select Branch</label>
+            <select name="branch_id" class="form-select form-select-sm" onchange="this.form.submit()">
+              {% for b in branches %}
+                <option value="{{ b.id }}" {% if b.id == selected_branch_id %}selected{% endif %}>{{ b.code }} – {{ b.name }}</option>
+              {% endfor %}
+            </select>
+          </form>
+
+          <form method="post" action="{{ url_for('admin.ai_generation') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="branch_id" value="{{ selected_branch_id }}">
+            <div class="mb-3">
+              <label class="form-label small fw-medium">Subject</label>
+              <select name="subject_id" class="form-select form-select-sm" required>
+                {% for s in subjects %}
+                  <option value="{{ s.id }}">{{ s.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="form-label small fw-medium">Target Question Count (1–15)</label>
+              <input class="form-control form-control-sm" type="number" name="target_count" min="1" max="15" value="3" required>
+            </div>
+            <button type="submit" class="btn btn-gi-primary w-100">Queue AI Generation Job</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="gi-card p-4">
+          <h5 class="fw-semibold mb-3">Recent Generation Jobs</h5>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Job</th>
+                  <th>Branch / Subject</th>
+                  <th>Target</th>
+                  <th>Status</th>
+                  <th>Latest Log</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for g in gen_jobs %}
+                  <tr>
+                    <td>#{{ g.id }}</td>
+                    <td class="small">{{ g.branch.code }} &middot; {{ g.subject.name if g.subject else 'All' }}</td>
+                    <td>{{ g.target_count }}</td>
+                    <td><span class="badge {{ 'bg-success' if g.status == 'completed' else ('bg-danger' if g.status == 'failed' else 'bg-warning text-dark') }}">{{ g.status }}</span></td>
+                    <td class="small text-muted">{{ g.logs[-1].message if g.logs else '-' }}</td>
+                  </tr>
+                {% else %}
+                  <tr><td colspan="5" class="text-center text-muted py-4">No AI generation jobs run yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Register | GATE Intelligence{% endblock %}
+{% block content %}
+<div class="gi-auth-shell" style="max-width: 540px;">
+  <div class="gi-card p-4 p-md-5">
+    <h3 class="fw-bold mb-1" style="color: var(--gi-navy);">Student Registration</h3>
+    <p class="text-muted small mb-4">Select your GATE branch and target examination year to initialize your workspace.</p>
+    <form method="post" action="{{ url_for('auth.register') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="mb-3">
+        <label class="form-label fw-medium" for="full_name">Full Name</label>
+        <input class="form-control" id="full_name" name="full_name" type="text" value="{{ form_data.get('full_name', '') }}" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-medium" for="email">Email Address</label>
+        <input class="form-control" id="email" name="email" type="email" value="{{ form_data.get('email', '') }}" required>
+      </div>
+      <div class="row g-3 mb-3">
+        <div class="col-md-7">
+          <label class="form-label fw-medium" for="branch_id">GATE Branch</label>
+          <select class="form-select" id="branch_id" name="branch_id" required>
+            {% for b in branches %}
+              <option value="{{ b.id }}" {% if form_data.get('branch_id') == b.id|string %}selected{% endif %}>
+                {{ b.code }} – {{ b.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label fw-medium" for="target_exam_year">Target Year</label>
+          <select class="form-select" id="target_exam_year" name="target_exam_year" required>
+            {% for yr in years %}
+              <option value="{{ yr }}" {% if form_data.get('target_exam_year') == yr|string %}selected{% endif %}>GATE {{ yr }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label fw-medium" for="password">Password (min 8 chars)</label>
+          <input class="form-control" id="password" name="password" type="password" minlength="8" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-medium" for="confirm_password">Confirm Password</label>
+          <input class="form-control" id="confirm_password" name="confirm_password" type="password" minlength="8" required>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-gi-primary w-100 py-2 fw-semibold">Create Account</button>
+    </form>
+    <div class="mt-3 text-center small">
+      Already registered? <a href="{{ url_for('auth.login') }}">Sign in here</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

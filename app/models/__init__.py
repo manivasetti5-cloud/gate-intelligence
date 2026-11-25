@@ -1,0 +1,96 @@
+"""Central model registry for SQLAlchemy and Flask-Migrate discovery."""
+
+from app.models.analytics import (
+    AIRecommendation,
+    FormulaEntry,
+    RevisionPlan,
+    RevisionTask,
+    StudentPerformance,
+    TopicPerformance,
+)
+from app.models.attempt import (
+    Bookmark,
+    ErrorNotebookEntry,
+    Result,
+    StudentAttempt,
+    StudentResponse,
+    TestSession,
+)
+from app.models.paper import (
+    ExtractedQuestion,
+    ExtractionJob,
+    ExtractionLog,
+    GeneratedQuestion,
+    GenerationJob,
+    GenerationLog,
+    Paper,
+    PaperVersion,
+)
+from app.models.question import (
+    AnswerVerification,
+    Question,
+    QuestionHistory,
+    QuestionImage,
+    QuestionOption,
+    QuestionSource,
+    QuestionTag,
+)
+from app.models.syllabus import (
+    Branch,
+    Chapter,
+    Concept,
+    ExamPattern,
+    Subject,
+    SyllabusVersion,
+    Topic,
+)
+from app.models.system import ApplicationSetting, AuditLog, Notification
+from app.models.test import Test, TestConfiguration, TestQuestion
+from app.models.user import AdminProfile, Role, StudentProfile, User
+
+__all__ = [
+    "Role",
+    "User",
+    "StudentProfile",
+    "AdminProfile",
+    "Branch",
+    "SyllabusVersion",
+    "Subject",
+    "Chapter",
+    "Topic",
+    "Concept",
+    "ExamPattern",
+    "QuestionSource",
+    "Question",
+    "QuestionOption",
+    "QuestionImage",
+    "QuestionTag",
+    "AnswerVerification",
+    "QuestionHistory",
+    "TestConfiguration",
+    "Test",
+    "TestQuestion",
+    "StudentAttempt",
+    "TestSession",
+    "StudentResponse",
+    "Result",
+    "Bookmark",
+    "ErrorNotebookEntry",
+    "Paper",
+    "PaperVersion",
+    "ExtractionJob",
+    "ExtractionLog",
+    "ExtractedQuestion",
+    "GenerationJob",
+    "GenerationLog",
+    "GeneratedQuestion",
+    "FormulaEntry",
+    "StudentPerformance",
+    "TopicPerformance",
+    "AIRecommendation",
+    "RevisionPlan",
+    "RevisionTask",
+    "AuditLog",
+    "Notification",
+    "ApplicationSetting",
+]

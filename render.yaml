@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: gate-intelligence
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python -m flask db upgrade && python -m flask seed
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 "app:create_app('production')"
+    healthCheckPath: /health
+    envVars:
+      - key: FLASK_APP
+        value: run.py
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false # Paste free Neon or Supabase PostgreSQL connection string
+      - key: GEMINI_API_KEY
+        sync: false # Optional Gemini API key for AI solving & generation
+      - key: DEFAULT_ADMIN_EMAIL
+        value: admin@gateintelligence.local
+      - key: DEFAULT_ADMIN_PASSWORD
+        sync: false # Set strong admin password before deploying

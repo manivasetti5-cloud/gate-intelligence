@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Job #{{ job.id }} | Admin{% endblock %}
+
+{% block layout_body %}
+  {% include "admin/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Extraction Job #{{ job.id }}</h2>
+        <p class="text-muted mb-0">{{ job.paper_version.paper.title }} ({{ job.paper_version.paper.branch.code }} {{ job.paper_version.paper.exam_year }})</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('admin.verification') }}" class="btn btn-outline-primary btn-sm">Open Verification Queue</a>
+        <a href="{{ url_for('admin.jobs') }}" class="btn btn-outline-secondary btn-sm">All Jobs</a>
+      </div>
+    </div>
+
+    <div class="gi-card p-4 mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <strong>Pipeline Status: <span id="jobStatusBadge" class="badge bg-dark text-uppercase">{{ job.status }}</span></strong>
+        <span id="jobProgressText" class="small text-muted">{{ job.progress_percent }}%</span>
+      </div>
+      <div class="progress mb-3" style="height: 10px;">
+        <div id="jobProgressBar" class="progress-bar" style="width: {{ job.progress_percent }}%;"></div>
+      </div>
+      <div class="row g-2 text-center small">
+        <div class="col-3"><div class="p-2 bg-light rounded">Detected: <strong id="cntDetected">{{ job.total_detected }}</strong></div></div>
+        <div class="col-3"><div class="p-2 bg-light rounded">Published: <strong id="cntPublished">{{ job.published_count }}</strong></div></div>
+        <div class="col-3"><div class="p-2 bg-light rounded">Awaiting Review: <strong id="cntReview">{{ job.review_count }}</strong></div></div>
+        <div class="col-3"><div class="p-2 bg-light rounded">Failed: <strong id="cntFailed">{{ job.failed_count }}</strong></div></div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="gi-card p-4">
+          <h5 class="fw-semibold mb-3">Segmented Questions</h5>
+          {% for eq in job.extracted_questions %}
+            <div class="border rounded p-3 mb-3 small">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong>Q.{{ eq.raw_q_number or '?' }} (Page {{ eq.page_number }})</strong>
+                <div>
+                  <span class="badge bg-light text-dark border">{{ eq.structured_json.get('question_type', '?') }}</span>
+                  <span class="badge {{ 'bg-success' if eq.review_status == 'published' else 'bg-warning text-dark' }}">{{ eq.review_status }}</span>
+                </div>
+              </div>
+              <p class="mb-2">{{ eq.structured_json.get('statement_md', eq.raw_text)[:240] }}</p>
+              {% if eq.crop_image_path %}
+                <div class="text-muted">Preserved figure: <code>{{ eq.crop_image_path }}</code></div>
+              {% endif %}
+              {% if eq.duplicate_of_question_id %}
+                <div class="text-danger">Duplicate of Question #{{ eq.duplicate_of_question_id }}</div>
+              {% endif %}
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">No segmented questions recorded yet.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="gi-card p-4">
+          <h5 class="fw-semibold mb-3">Processing Logs</h5>
+          <ul class="list-group list-group-flush small">
+            {% for log in job.logs %}
+              <li class="list-group-item px-0">
+                <span class="badge {{ 'bg-danger' if log.level == 'ERROR' else ('bg-warning text-dark' if log.level == 'WARNING' else 'bg-secondary') }} me-1">{{ log.stage }}</span>
+                <span>{{ log.message }}</span>
+              </li>
+            {% else %}
+              <li class="list-group-item px-0 text-muted">Waiting for worker logs...</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  const statusEl = document.getElementById("jobStatusBadge");
+  if (!statusEl) return;
+  const terminal = new Set(["completed", "requires_review", "failed"]);
+  if (terminal.has(statusEl.textContent.trim().toLowerCase())) return;
+
+  const timer = setInterval(async () => {
+    const res = await fetch("{{ url_for('admin.job_status_api', job_id=job.id) }}");
+    const data = await res.json();
+    statusEl.textContent = data.status;
+    document.getElementById("jobProgressText").textContent = `${data.progress_percent}%`;
+    document.getElementById("jobProgressBar").style.width = `${data.progress_percent}%`;
+    document.getElementById("cntDetected").textContent = data.total_detected;
+    document.getElementById("cntPublished").textContent = data.published_count;
+    document.getElementById("cntReview").textContent = data.review_count;
+    document.getElementById("cntFailed").textContent = data.failed_count;
+    if (terminal.has(data.status)) {
+      clearInterval(timer);
+      window.location.reload();
+    }
+  }, 2000);
+})();
+</script>
+{% endblock %}

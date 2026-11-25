@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Formula & Shortcut Library | GATE Intelligence{% endblock %}
+
+{% block layout_body %}
+  {% include "student/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+      <div>
+        <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Formula &amp; Shortcut Library ({{ selected_branch.code if selected_branch else '' }})</h2>
+        <p class="text-muted mb-0">High-yield GATE identities, variable definitions, shortcuts, and exam tips.</p>
+      </div>
+      <span class="badge gi-badge-branch px-3 py-2">{{ formulas|length }} Formulas Loaded</span>
+    </div>
+
+    <form method="get" action="{{ url_for('analytics.formulas') }}" class="gi-card p-3 mb-4">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label small fw-medium">Subject</label>
+          <select name="subject_id" class="form-select form-select-sm">
+            <option value="">All Subjects</option>
+            {% for s in subjects %}
+              <option value="{{ s.id }}" {% if selected_subject_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label small fw-medium">Search Formula / Keyword</label>
+          <input class="form-control form-control-sm" name="q" value="{{ q_text }}" placeholder="e.g. Eigenvalue, Carnot, CIDR, Deadlock, Buck...">
+        </div>
+        <div class="col-md-2">
+          <button type="submit" class="btn btn-sm btn-gi-primary w-100">Search</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="row g-3">
+      {% for f in formulas %}
+        <div class="col-md-6">
+          <div class="gi-card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+              <h6 class="fw-bold mb-0">{{ f.title }}</h6>
+              <span class="badge bg-light text-dark border">{{ f.subject.name if f.subject else selected_branch.code }}</span>
+            </div>
+            <div class="p-2 bg-light rounded border mb-2"><code class="text-dark">{{ f.formula_latex }}</code></div>
+            {% if f.variables_md %}<div class="small text-muted mb-1"><strong>Variables:</strong> {{ f.variables_md }}</div>{% endif %}
+            {% if f.shortcut_md %}<div class="small mb-1"><strong>Shortcut:</strong> {{ f.shortcut_md }}</div>{% endif %}
+            {% if f.exam_tip_md %}<div class="small text-primary"><strong>Exam Tip:</strong> {{ f.exam_tip_md }}</div>{% endif %}
+          </div>
+        </div>
+      {% else %}
+        <div class="col-12"><div class="gi-card p-4 text-center text-muted">No matching formulas found.</div></div>
+      {% endfor %}
+    </div>
+  </main>
+{% endblock %}

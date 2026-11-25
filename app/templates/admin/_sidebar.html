@@ -1,0 +1,48 @@
+<aside class="col-lg-3 col-xl-2 gi-sidebar p-3">
+  <div class="mb-3 px-2">
+    <div class="small text-muted">Operations Console</div>
+    <div class="fw-semibold" style="color: var(--gi-navy);">Admin Control</div>
+  </div>
+  <nav class="nav flex-column">
+    <a class="nav-link {% if request.endpoint == 'admin.overview' %}active{% endif %}" href="{{ url_for('admin.overview') }}">
+      <span><i class="bi bi-grid me-2"></i>Overview</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'admin.upload_paper' %}active{% endif %}" href="{{ url_for('admin.upload_paper') }}">
+      <span><i class="bi bi-file-earmark-arrow-up me-2"></i>Paper Upload</span>
+    </a>
+    <a class="nav-link {% if request.endpoint in ('admin.jobs', 'admin.job_detail') %}active{% endif %}" href="{{ url_for('admin.jobs') }}">
+      <span><i class="bi bi-cpu me-2"></i>Processing Jobs</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'admin.question_bank' %}active{% endif %}" href="{{ url_for('admin.question_bank') }}">
+      <span><i class="bi bi-collection me-2"></i>Question Bank</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'admin.ai_generation' %}active{% endif %}" href="{{ url_for('admin.ai_generation') }}">
+      <span><i class="bi bi-stars me-2"></i>AI Generation</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'admin.verification' %}active{% endif %}" href="{{ url_for('admin.verification') }}">
+      <span><i class="bi bi-check2-circle me-2"></i>Verification</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'admin.branches' %}active{% endif %}" href="{{ url_for('admin.branches') }}">
+      <span><i class="bi bi-diagram-2 me-2"></i>Branches</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'admin.syllabus' %}active{% endif %}" href="{{ url_for('admin.syllabus') }}">
+      <span><i class="bi bi-book me-2"></i>Syllabus Versions</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'admin.exam_patterns' %}active{% endif %}" href="{{ url_for('admin.exam_patterns') }}">
+      <span><i class="bi bi-sliders me-2"></i>Exam Patterns</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'admin.students' %}active{% endif %}" href="{{ url_for('admin.students') }}">
+      <span><i class="bi bi-people me-2"></i>Students</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'admin.analytics' %}active{% endif %}" href="{{ url_for('admin.analytics') }}">
+      <span><i class="bi bi-bar-chart me-2"></i>Analytics</span>
+    </a>
+    <a class="nav-link {% if request.endpoint == 'admin.logs' %}active{% endif %}" href="{{ url_for('admin.logs') }}">
+      <span><i class="bi bi-journal-code me-2"></i>System Logs</span>
+    </a>
+    <a class="nav-link" href="{{ url_for('admin.upcoming_module', module_name='settings') }}">
+      <span><i class="bi bi-gear me-2"></i>Settings</span>
+      <span class="gi-phase-tag">P3</span>
+    </a>
+  </nav>
+</aside>

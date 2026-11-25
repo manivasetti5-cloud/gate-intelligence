@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Result Report | GATE Intelligence{% endblock %}
+
+{% block layout_body %}
+  {% include "student/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+      <div>
+        <span class="badge bg-success mb-1">{{ attempt.status.replace('_', ' ').title() }}</span>
+        <h2 class="fw-bold mb-0" style="color: var(--gi-navy);">{{ attempt.test.title }}</h2>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('assessments.configure') }}" class="btn btn-outline-secondary btn-sm">Take Another Test</a>
+        <a href="{{ url_for('questions.error_notebook') }}" class="btn btn-gi-primary btn-sm">Open Error Notebook</a>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-sm-6 col-xl-3">
+        <div class="gi-card p-3">
+          <div class="gi-stat-label">Total Score</div>
+          <div class="gi-stat-value mt-1">{{ result.total_marks_obtained }} <span class="fs-6 text-muted fw-normal">/ {{ result.max_marks }}</span></div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="gi-card p-3">
+          <div class="gi-stat-label">Accuracy</div>
+          <div class="gi-stat-value mt-1">{{ result.accuracy_percent }}%</div>
+          <div class="small text-muted">{{ result.correct_count }} Correct &middot; {{ result.incorrect_count }} Wrong &middot; {{ result.unanswered_count }} Skipped</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="gi-card p-3">
+          <div class="gi-stat-label">Time Taken</div>
+          <div class="gi-stat-value mt-1">{{ (attempt.time_taken_seconds // 60) }}m {{ (attempt.time_taken_seconds % 60) }}s</div>
+          <div class="small text-muted">Avg {{ result.avg_time_per_question }}s / question</div>
+        </div>
+      </div>
+      <div class="col-sm-6 col-xl-3">
+        <div class="gi-card p-3">
+          <div class="gi-stat-label">Submitted At (UTC)</div>
+          <div class="fs-6 fw-semibold mt-2">{{ attempt.submitted_at.strftime('%Y-%m-%d %H:%M') if attempt.submitted_at else '-' }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Breakdown Tabs -->
+    <div class="gi-card p-4 mb-4">
+      <h5 class="fw-semibold mb-3">Performance Breakdown</h5>
+      <div class="row g-4">
+        {% for title, rows in [('By Subject', result.breakdown_json.get('subject', [])), ('By Question Type', result.breakdown_json.get('question_type', [])), ('By Difficulty', result.breakdown_json.get('difficulty', [])), ('By Topic', result.breakdown_json.get('topic', []))] %}
+          <div class="col-md-6">
+            <h6 class="small text-uppercase text-muted fw-bold">{{ title }}</h6>
+            <div class="table-responsive">
+              <table class="table table-sm small mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Group</th>
+                    <th>C / W / S</th>
+                    <th>Marks</th>
+                    <th>Accuracy</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for r in rows %}
+                    <tr>
+                      <td class="fw-medium">{{ r.label }}</td>
+                      <td>{{ r.correct }} / {{ r.incorrect }} / {{ r.unanswered }}</td>
+                      <td>{{ r.marks_obtained }} / {{ r.max_marks }}</td>
+                      <td>{{ r.accuracy_percent }}%</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Question-wise Answer Key & Detailed Explanations -->
+    <h4 class="fw-bold mb-3" style="color: var(--gi-navy);">Question-Wise Answer Key &amp; Detailed Solutions</h4>
+    {% for item in review_items %}
+      {% set q = item.question %}
+      {% set r = item.response %}
+      <div class="gi-card p-4 mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom pb-2 mb-3">
+          <div class="d-flex align-items-center flex-wrap gap-2">
+            <strong>Q{{ item.order_index }}</strong>
+            <span class="badge bg-light text-dark border">{{ q.question_type }}</span>
+            <span class="badge gi-badge-branch">{{ q.source.source_type }}</span>
+            <span class="badge bg-light text-dark border">{{ q.subject.name if q.subject else '' }}</span>
+            {% if item.is_unverified %}
+              <span class="badge bg-warning text-dark">Key Under Verification</span>
+            {% endif %}
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            {% if r and r.is_correct is sameas true %}
+              <span class="badge bg-success">Correct (+{{ r.marks_awarded }})</span>
+            {% elif r and r.is_correct is sameas false %}
+              <span class="badge bg-danger">Incorrect ({{ r.marks_awarded }})</span>
+            {% else %}
+              <span class="badge bg-secondary">Unanswered (0)</span>
+            {% endif %}
+            <form method="post" action="{{ url_for('questions.toggle_bookmark', question_id=q.id) }}" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm {{ 'btn-warning' if item.is_bookmarked else 'btn-outline-secondary' }}">
+                <i class="bi bi-bookmark{{ '-fill' if item.is_bookmarked else '' }}"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <p class="mb-3" style="white-space: pre-wrap;">{{ q.statement_md }}</p>
+
+        {% if q.question_type in ('MCQ', 'MSQ') %}
+          <div class="row g-2 mb-3">
+            {% for opt in q.options %}
+              <div class="col-md-6">
+                <div class="p-2 rounded border small {{ 'border-success bg-success-subtle' if opt.is_correct else '' }}">
+                  <strong>({{ opt.label }})</strong> {{ opt.option_text_md }}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="small mb-3">
+            <strong>Your Answer:</strong> {{ (r.selected_options_json | join(', ')) if (r and r.selected_options_json) else 'Not Answered' }}
+            &nbsp;|&nbsp;
+            <strong>Correct Answer:</strong>
+            {% if q.question_type == 'MCQ' %}{{ q.correct_answer_json.get('option') }}{% else %}{{ q.correct_answer_json.get('options', []) | join(', ') }}{% endif %}
+          </div>
+        {% else %}
+          <div class="small mb-3">
+            <strong>Your Numerical Answer:</strong> {{ r.nat_answer_value if (r and r.nat_answer_value is not none) else 'Not Answered' }}
+            &nbsp;|&nbsp;
+            <strong>Correct Answer:</strong> {{ q.correct_answer_json.get('value') }}
+            {% if q.nat_min is not none and q.nat_max is not none and q.nat_min != q.nat_max %}
+              (Accepted range: {{ q.nat_min }} to {{ q.nat_max }})
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% set exp = q.explanation_json or {} %}
+        <div class="bg-light rounded p-3 small">
+          <div class="row g-3">
+            {% if exp.get('concept_explanation') %}
+              <div class="col-md-6"><strong>Concept:</strong> {{ exp.get('concept_explanation') }}</div>
+            {% endif %}
+            {% if exp.get('formula_used') %}
+              <div class="col-md-6"><strong>Formula Used:</strong> <code>{{ exp.get('formula_used') }}</code></div>
+            {% endif %}
+            {% if exp.get('step_by_step') %}
+              <div class="col-12"><strong>Step-by-Step Solution:</strong> {{ exp.get('step_by_step') }}</div>
+            {% endif %}
+            {% if exp.get('shortcut_method') %}
+              <div class="col-md-6"><strong>Shortcut Method:</strong> {{ exp.get('shortcut_method') }}</div>
+            {% endif %}
+            {% if exp.get('alternative_method') %}
+              <div class="col-md-6"><strong>Alternative Method:</strong> {{ exp.get('alternative_method') }}</div>
+            {% endif %}
+            {% if exp.get('common_mistakes') %}
+              <div class="col-md-6"><strong>Common Mistakes:</strong> {{ exp.get('common_mistakes') }}</div>
+            {% endif %}
+            {% if exp.get('option_analysis') %}
+              <div class="col-md-6"><strong>Option Analysis:</strong> {{ exp.get('option_analysis') }}</div>
+            {% endif %}
+            {% if exp.get('gate_tip') %}
+              <div class="col-12 text-primary"><strong>GATE Exam Tip:</strong> {{ exp.get('gate_tip') }}</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </main>
+{% endblock %}

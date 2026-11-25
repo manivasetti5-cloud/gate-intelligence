@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Syllabus Explorer | GATE Intelligence{% endblock %}
+
+{% block layout_body %}
+  {% include "student/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+      <div>
+        <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Official Syllabus Hierarchy</h2>
+        <p class="text-muted mb-0">Branch &rarr; Subject &rarr; Chapter &rarr; Topic &rarr; Concept</p>
+      </div>
+      <form method="get" action="{{ url_for('student.syllabus') }}" class="d-flex gap-2">
+        <select name="branch_id" class="form-select form-select-sm">
+          {% for b in branches %}
+            <option value="{{ b.id }}" {% if selected_branch and b.id == selected_branch.id %}selected{% endif %}>{{ b.code }} – {{ b.name }}</option>
+          {% endfor %}
+        </select>
+        <select name="year" class="form-select form-select-sm">
+          {% for yr in years %}
+            <option value="{{ yr }}" {% if yr == exam_year %}selected{% endif %}>GATE {{ yr }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-sm btn-gi-primary">Load</button>
+      </form>
+    </div>
+
+    {% if syllabus_version %}
+      <div class="gi-card p-3 mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="small">
+          <strong>{{ selected_branch.code }} ({{ exam_year }})</strong> &middot;
+          {{ syllabus_version.syllabus_source }} &middot;
+          Status: <span class="badge bg-success">{{ syllabus_version.status }}</span>
+        </div>
+        <div class="small text-muted">
+          {{ syllabus_counts.subjects }} Subjects &middot; {{ syllabus_counts.chapters }} Chapters &middot; {{ syllabus_counts.topics }} Topics &middot; {{ syllabus_counts.concepts }} Concepts
+        </div>
+      </div>
+
+      <div class="accordion" id="syllabusAccordion">
+        {% for subj in subjects %}
+          <div class="accordion-item mb-2 border rounded">
+            <h2 class="accordion-header" id="heading-{{ subj.id }}">
+              <button class="accordion-button {% if not loop.first %}collapsed{% endif %} fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ subj.id }}">
+                <span class="badge bg-light text-dark border me-2">{{ subj.code }}</span>
+                <span>{{ subj.name }}</span>
+                {% if subj.weightage_percent %}
+                  <span class="ms-auto me-3 small text-muted">{{ subj.weightage_percent|int }}% weightage</span>
+                {% endif %}
+              </button>
+            </h2>
+            <div id="collapse-{{ subj.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#syllabusAccordion">
+              <div class="accordion-body">
+                {% for ch in subj.chapters %}
+                  <div class="mb-3 pb-2 border-bottom">
+                    <h6 class="fw-bold mb-2" style="color: var(--gi-navy);">
+                      {{ ch.name }}
+                      {% if ch.is_outdated_in_latest %}
+                        <span class="badge bg-warning text-dark ms-1">Updated/Deprecated</span>
+                      {% endif %}
+                    </h6>
+                    <div class="row g-2">
+                      {% for tp in ch.topics %}
+                        <div class="col-md-6">
+                          <div class="p-2 rounded bg-light border h-100">
+                            <div class="fw-semibold small mb-1">
+                              {{ tp.name }}
+                              {% if tp.is_outdated_in_latest %}
+                                <span class="badge bg-warning text-dark ms-1">Outdated</span>
+                              {% endif %}
+                            </div>
+                            <ul class="small text-muted mb-0 ps-3">
+                              {% for cp in tp.concepts %}
+                                <li>{{ cp.name }}</li>
+                              {% endfor %}
+                            </ul>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="gi-card p-4 text-center text-muted">No active syllabus version found for this selection.</div>
+    {% endif %}
+  </main>
+{% endblock %}

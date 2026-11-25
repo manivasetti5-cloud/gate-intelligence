@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}GATE Intelligence – AI-Powered Assessment Platform{% endblock %}
+{% block content %}
+<div class="row align-items-center g-4 py-4">
+  <div class="col-lg-7">
+    <span class="badge gi-badge-branch px-3 py-2 mb-3">GATE Preparation &amp; Evaluation Ecosystem</span>
+    <h1 class="display-6 fw-bold mb-3" style="color: var(--gi-navy);">
+      Structured GATE Testing, Verification &amp; Performance Intelligence
+    </h1>
+    <p class="lead text-muted mb-4">
+      Practice historical PYQs and syllabus-aligned questions in a realistic GATE CBT environment across CS, DA, EC, ME, and EE—backed by immediate evaluation and diagnostic analytics.
+    </p>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('auth.register') }}" class="btn btn-gi-primary btn-lg px-4">Create Student Account</a>
+      <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary btn-lg px-4">Student Sign In</a>
+      <a href="{{ url_for('auth.admin_login') }}" class="btn btn-outline-dark btn-lg px-4">Admin Portal</a>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="gi-card p-4">
+      <h5 class="fw-semibold mb-3">Supported GATE Branches</h5>
+      <div class="list-group list-group-flush">
+        {% for b in branches %}
+          <div class="list-group-item px-0 d-flex justify-content-between align-items-start">
+            <div>
+              <span class="badge gi-badge-branch me-2">{{ b.code }}</span>
+              <span class="fw-medium">{{ b.name }}</span>
+            </div>
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">Run database seed scripts to load GATE branches.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

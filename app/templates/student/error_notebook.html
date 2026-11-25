@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Error Notebook | GATE Intelligence{% endblock %}
+
+{% block layout_body %}
+  {% include "student/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+      <div>
+        <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Personal Error &amp; Revision Notebook</h2>
+        <p class="text-muted mb-0">Incorrectly answered questions captured automatically from your assessments.</p>
+      </div>
+      {% if entries %}
+      <form method="post" action="{{ url_for('assessments.reattempt') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="selection_mode" value="incorrect">
+        <button type="submit" class="btn btn-gi-primary btn-sm">Reattempt Unresolved Errors</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <ul class="nav nav-pills mb-4 gap-2">
+      <li class="nav-item"><a class="nav-link {% if status_filter == 'unresolved' %}active{% endif %}" href="{{ url_for('questions.error_notebook', status='unresolved') }}">Unresolved</a></li>
+      <li class="nav-item"><a class="nav-link {% if status_filter == 'reattempted_correct' %}active{% endif %}" href="{{ url_for('questions.error_notebook', status='reattempted_correct') }}">Reattempted Correct</a></li>
+      <li class="nav-item"><a class="nav-link {% if status_filter == 'mastered' %}active{% endif %}" href="{{ url_for('questions.error_notebook', status='mastered') }}">Mastered</a></li>
+      <li class="nav-item"><a class="nav-link {% if status_filter == 'all' %}active{% endif %}" href="{{ url_for('questions.error_notebook', status='all') }}">All</a></li>
+    </ul>
+
+    {% for subj_name, group_entries in grouped.items() %}
+      <h5 class="fw-bold mb-3" style="color: var(--gi-navy);">{{ subj_name }} ({{ group_entries|length }})</h5>
+      {% for entry in group_entries %}
+        {% set q = entry.question %}
+        <div class="gi-card p-4 mb-3">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <span class="badge bg-danger">Mistakes: {{ entry.mistake_count }}</span>
+              <span class="badge bg-light text-dark border">{{ q.question_type }}</span>
+              <span class="small text-muted">{{ q.chapter.name if q.chapter else '' }} {% if q.concept %}&rsaquo; {{ q.concept.name }}{% endif %}</span>
+            </div>
+            <span class="badge {{ 'bg-success' if entry.status == 'mastered' else 'bg-warning text-dark' }}">{{ entry.status.replace('_', ' ').title() }}</span>
+          </div>
+          <p class="mb-3" style="white-space: pre-wrap;">{{ q.statement_md }}</p>
+          <form method="post" action="{{ url_for('questions.update_error_note', entry_id=entry.id) }}" class="row g-2 align-items-center">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-7">
+              <input class="form-control form-control-sm" name="personal_note" value="{{ entry.personal_note or '' }}" placeholder="Write why you missed this or key formula to remember...">
+            </div>
+            <div class="col-md-3">
+              <select class="form-select form-select-sm" name="status">
+                <option value="unresolved" {% if entry.status == 'unresolved' %}selected{% endif %}>Unresolved</option>
+                <option value="reattempted_correct" {% if entry.status == 'reattempted_correct' %}selected{% endif %}>Reattempted Correct</option>
+                <option value="mastered" {% if entry.status == 'mastered' %}selected{% endif %}>Mastered</option>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-sm btn-outline-primary w-100">Save</button>
+            </div>
+          </form>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="gi-card p-4 text-center text-muted">No entries in this view. Incorrect answers from submitted tests appear here automatically.</div>
+    {% endfor %}
+  </main>
+{% endblock %}

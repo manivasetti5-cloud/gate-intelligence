@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Question Bank | Admin{% endblock %}
+
+{% block layout_body %}
+  {% include "admin/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Central Question Bank</h2>
+    <p class="text-muted mb-4">Inspect question provenance, verification status, and publication state.</p>
+
+    <form method="get" action="{{ url_for('admin.question_bank') }}" class="gi-card p-3 mb-4">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small">Branch</label>
+          <select name="branch_id" class="form-select form-select-sm">
+            <option value="">All Branches</option>
+            {% for b in branches %}
+              <option value="{{ b.id }}" {% if filters.branch_id == b.id %}selected{% endif %}>{{ b.code }} – {{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Source</label>
+          <select name="source_type" class="form-select form-select-sm">
+            <option value="ALL" {% if filters.source_type == 'ALL' %}selected{% endif %}>All Sources</option>
+            <option value="PYQ" {% if filters.source_type == 'PYQ' %}selected{% endif %}>PYQ</option>
+            <option value="AI_GENERATED" {% if filters.source_type == 'AI_GENERATED' %}selected{% endif %}>AI_GENERATED</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small">Type</label>
+          <select name="question_type" class="form-select form-select-sm">
+            <option value="ALL" {% if filters.question_type == 'ALL' %}selected{% endif %}>All Types</option>
+            <option value="MCQ" {% if filters.question_type == 'MCQ' %}selected{% endif %}>MCQ</option>
+            <option value="MSQ" {% if filters.question_type == 'MSQ' %}selected{% endif %}>MSQ</option>
+            <option value="NAT" {% if filters.question_type == 'NAT' %}selected{% endif %}>NAT</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-sm btn-gi-primary w-100">Apply Filters</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="gi-card p-4">
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-3">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Branch / Subject</th>
+              <th>Source</th>
+              <th>Type / Marks</th>
+              <th>Statement</th>
+              <th>Verification</th>
+              <th>Published</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for q in pagination.items %}
+              <tr>
+                <td>#{{ q.id }}</td>
+                <td class="small">{{ q.branch.code if q.branch else '' }} &middot; {{ q.subject.name if q.subject else '' }}</td>
+                <td><span class="badge gi-badge-branch">{{ q.source.source_type }}</span></td>
+                <td class="small">{{ q.question_type }} ({{ q.marks }}M)</td>
+                <td class="small" style="max-width: 340px;">{{ q.statement_md[:120] }}{% if q.statement_md|length > 120 %}...{% endif %}</td>
+                <td><span class="badge {{ 'bg-success' if q.verification_status == 'verified' else 'bg-warning text-dark' }}">{{ q.verification_status }}</span></td>
+                <td>
+                  <form method="post" action="{{ url_for('admin.question_bank') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="question_id" value="{{ q.id }}">
+                    <input type="hidden" name="action" value="toggle_publish">
+                    <button type="submit" class="btn btn-sm {{ 'btn-success' if q.is_published else 'btn-outline-secondary' }}">
+                      {{ 'Published' if q.is_published else 'Draft' }}
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="7" class="text-center text-muted py-4">No questions found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}My Performance | GATE Intelligence{% endblock %}
+
+{% block layout_body %}
+  {% include "student/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Performance Analytics ({{ selected_branch.code if selected_branch else '' }})</h2>
+        <p class="text-muted mb-0">Longitudinal analysis computed strictly from your submitted assessments.</p>
+      </div>
+      <a href="{{ url_for('analytics.advisor') }}" class="btn btn-gi-primary btn-sm">Open AI Advisor</a>
+    </div>
+
+    {% if bundle and bundle.performance.total_attempts > 0 %}
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+          <div class="gi-card p-3">
+            <div class="gi-stat-label">Completed Tests</div>
+            <div class="gi-stat-value mt-1">{{ bundle.performance.total_attempts }}</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="gi-card p-3">
+            <div class="gi-stat-label">Avg Accuracy</div>
+            <div class="gi-stat-value mt-1">{{ bundle.performance.avg_accuracy }}%</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="gi-card p-3">
+            <div class="gi-stat-label">Attempt Rate</div>
+            <div class="gi-stat-value mt-1">{{ bundle.attempt_rate }}%</div>
+            <div class="small text-muted">Avg {{ bundle.performance.avg_speed_sec }}s / Q</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <div class="gi-card p-3">
+            <div class="gi-stat-label">Speed &amp; Guessing Flags</div>
+            <div class="fs-5 fw-bold mt-1 text-danger">{{ bundle.rapid_wrong_count }} Rapid Wrong</div>
+            <div class="small text-muted">{{ bundle.excessive_time_count }} questions &gt; 180s</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+          <div class="gi-card p-4 h-100">
+            <h5 class="fw-semibold mb-3">Score &amp; Accuracy Trend</h5>
+            <canvas id="trendChart" height="180"></canvas>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="gi-card p-4 h-100">
+            <h5 class="fw-semibold mb-3">Subject-Wise Accuracy (%)</h5>
+            <canvas id="subjectChart" height="180"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="gi-card p-4 h-100">
+            <h5 class="fw-semibold mb-3">Strong &amp; Weak Subjects</h5>
+            <div class="mb-3">
+              <strong class="small text-success">Strong Subjects (&ge;70%):</strong>
+              {% for s in bundle.strong_subjects %}
+                <span class="badge bg-success-subtle text-success border me-1">{{ s.name }} ({{ s.accuracy }}%)</span>
+              {% else %}
+                <span class="text-muted small">None identified yet.</span>
+              {% endfor %}
+            </div>
+            <div class="mb-3">
+              <strong class="small text-danger">Needs Improvement (&lt;60%):</strong>
+              {% for s in bundle.weak_subjects %}
+                <span class="badge bg-danger-subtle text-danger border me-1">{{ s.name }} ({{ s.accuracy }}%)</span>
+              {% else %}
+                <span class="text-muted small">None flagged.</span>
+              {% endfor %}
+            </div>
+            <div class="small text-muted">Repeated mistakes (&ge;2 misses): <strong>{{ bundle.repeated_errors }}</strong></div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="gi-card p-4 h-100">
+            <h5 class="fw-semibold mb-3">Unattempted Syllabus Topics (Sample)</h5>
+            <ul class="small mb-0">
+              {% for t in bundle.unattempted_topics %}
+                <li><strong>{{ t.subject }}</strong>: {{ t.topic }}</li>
+              {% else %}
+                <li class="text-muted">All syllabus topics in this branch have been attempted!</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="gi-card p-5 text-center">
+        <h5 class="fw-semibold mb-2">No Completed Assessment History Yet</h5>
+        <p class="text-muted mb-3">Complete at least one assessment to view longitudinal accuracy trends, speed diagnostics, and subject-wise charts.</p>
+        <a href="{{ url_for('assessments.configure') }}" class="btn btn-gi-primary">Take a Test</a>
+      </div>
+    {% endif %}
+  </main>
+{% endblock %}
+
+{% block scripts %}
+{% if bundle and bundle.performance.total_attempts > 0 %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  const labels = {{ bundle.trend_labels | tojson }};
+  const scores = {{ bundle.trend_scores | tojson }};
+  const accs = {{ bundle.trend_accuracy | tojson }};
+  const subjNames = {{ bundle.subject_rows | map(attribute='name') | list | tojson }};
+  const subjAcc = {{ bundle.subject_rows | map(attribute='accuracy') | list | tojson }};
+
+  new Chart(document.getElementById("trendChart"), {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [
+        { label: "Score %", data: scores, borderColor: "#0f2447", tension: 0.25 },
+        { label: "Accuracy %", data: accs, borderColor: "#1d63dc", tension: 0.25 }
+      ]
+    },
+    options: { scales: { y: { beginAtZero: true, max: 100 } } }
+  });
+
+  new Chart(document.getElementById("subjectChart"), {
+    type: "bar",
+    data: {
+      labels: subjNames,
+      datasets: [{ label: "Accuracy %", data: subjAcc, backgroundColor: "#1d63dc" }]
+    },
+    options: { scales: { y: { beginAtZero: true, max: 100 } } }
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

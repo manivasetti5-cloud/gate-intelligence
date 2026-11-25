@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Test History | GATE Intelligence{% endblock %}
+
+{% block layout_body %}
+  {% include "student/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Test History</h2>
+        <p class="text-muted mb-0">Review all completed and in-progress GATE assessments.</p>
+      </div>
+      <a href="{{ url_for('assessments.configure') }}" class="btn btn-gi-primary btn-sm">New Assessment</a>
+    </div>
+
+    <div class="gi-card p-4">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Assessment</th>
+              <th>Mode</th>
+              <th>Status</th>
+              <th>Score</th>
+              <th>Accuracy</th>
+              <th>Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for att in attempts %}
+              <tr>
+                <td class="fw-medium">{{ att.test.title }}</td>
+                <td><span class="badge bg-light text-dark border text-uppercase">{{ att.test.configuration.mode }}</span></td>
+                <td>
+                  <span class="badge {{ 'bg-success' if att.status in ('submitted', 'auto_submitted') else 'bg-warning text-dark' }}">
+                    {{ att.status.replace('_', ' ').title() }}
+                  </span>
+                </td>
+                <td>
+                  {% if att.result %}
+                    <strong>{{ att.result.total_marks_obtained }}</strong> / {{ att.result.max_marks }}
+                  {% else %}
+                    &mdash;
+                  {% endif %}
+                </td>
+                <td>
+                  {% if att.result %}
+                    {{ att.result.accuracy_percent }}%
+                  {% else %}
+                    &mdash;
+                  {% endif %}
+                </td>
+                <td class="small text-muted">{{ att.started_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                  {% if att.status == 'in_progress' %}
+                    <a href="{{ url_for('assessments.exam_interface', attempt_id=att.id) }}" class="btn btn-sm btn-warning">Resume</a>
+                  {% else %}
+                    <a href="{{ url_for('results.view_result', attempt_id=att.id) }}" class="btn btn-sm btn-outline-primary">View Report</a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr><td colspan="7" class="text-muted text-center py-4">You have not attempted any tests yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+{% endblock %}

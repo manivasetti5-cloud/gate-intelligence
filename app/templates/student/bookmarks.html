@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Bookmarks | GATE Intelligence{% endblock %}
+
+{% block layout_body %}
+  {% include "student/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+      <div>
+        <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Bookmarked Questions</h2>
+        <p class="text-muted mb-0">Saved questions for targeted practice and quick revision.</p>
+      </div>
+      {% if bookmarks %}
+      <form method="post" action="{{ url_for('assessments.reattempt') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="selection_mode" value="bookmarked">
+        <button type="submit" class="btn btn-gi-primary btn-sm">Reattempt Bookmarked</button>
+      </form>
+      {% endif %}
+    </div>
+
+    {% for b in bookmarks %}
+      {% set q = b.question %}
+      <div class="gi-card p-4 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div class="d-flex gap-2">
+            <span class="badge gi-badge-branch">{{ q.source.source_type }}</span>
+            <span class="badge bg-light text-dark border">{{ q.question_type }} &middot; {{ q.marks }}M</span>
+            <span class="small text-muted">{{ q.subject.name if q.subject else '' }}</span>
+          </div>
+          <form method="post" action="{{ url_for('questions.toggle_bookmark', question_id=q.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+          </form>
+        </div>
+        <p class="mb-0" style="white-space: pre-wrap;">{{ q.statement_md }}</p>
+      </div>
+    {% else %}
+      <div class="gi-card p-4 text-center text-muted">No bookmarked questions yet. Bookmark questions from your test results or Question Bank.</div>
+    {% endfor %}
+  </main>
+{% endblock %}
