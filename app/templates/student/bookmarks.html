@@ -32,7 +32,24 @@
             <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
           </form>
         </div>
-        <p class="mb-0" style="white-space: pre-wrap;">{{ q.statement_md }}</p>
+        <p class="mb-2" style="white-space: pre-wrap;">{{ q.statement_md }}</p>
+        {% if q.images %}
+          <div class="mb-2 d-flex flex-wrap gap-2">
+            {% for img in q.images %}
+              <img src="{{ url_for('static', filename=img.file_path) }}" class="img-fluid rounded border" style="max-height: 220px;" alt="{{ img.caption or 'Question figure' }}">
+            {% endfor %}
+          </div>
+        {% endif %}
+        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#bmAns{{ q.id }}">View Answer &amp; Explanation</button>
+        <div class="collapse mt-2" id="bmAns{{ q.id }}">
+          <div class="p-3 bg-light rounded border small">
+            <strong>Answer:</strong>
+            {% if q.question_type == 'MCQ' %}{{ q.correct_answer_json.get('option') }}{% elif q.question_type == 'MSQ' %}{{ q.correct_answer_json.get('options', [])|join(', ') }}{% else %}{{ q.correct_answer_json.get('value') }}{% endif %}
+            {% if q.explanation_json and q.explanation_json.get('step_by_step') %}
+              <div class="mt-1">{{ q.explanation_json.get('step_by_step') }}</div>
+            {% endif %}
+          </div>
+        </div>
       </div>
     {% else %}
       <div class="gi-card p-4 text-center text-muted">No bookmarked questions yet. Bookmark questions from your test results or Question Bank.</div>

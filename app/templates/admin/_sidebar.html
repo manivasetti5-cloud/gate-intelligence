@@ -40,9 +40,8 @@
     <a class="nav-link {% if request.endpoint == 'admin.logs' %}active{% endif %}" href="{{ url_for('admin.logs') }}">
       <span><i class="bi bi-journal-code me-2"></i>System Logs</span>
     </a>
-    <a class="nav-link" href="{{ url_for('admin.upcoming_module', module_name='settings') }}">
+    <a class="nav-link {% if request.endpoint == 'admin.settings' %}active{% endif %}" href="{{ url_for('admin.settings') }}">
       <span><i class="bi bi-gear me-2"></i>Settings</span>
-      <span class="gi-phase-tag">P3</span>
     </a>
   </nav>
 </aside>

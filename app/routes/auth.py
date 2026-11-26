@@ -116,6 +116,13 @@ def register():
     branches = get_active_branches()
     years = get_available_exam_years()
 
+    from app.models.system import ApplicationSetting
+
+    reg_setting = ApplicationSetting.query.filter_by(key="allow_student_registration").first()
+    if reg_setting and reg_setting.value_json.get("value") is False:
+        flash("New student registrations are currently paused by the administrator.", "warning")
+        return redirect(url_for("auth.login"))
+
     if request.method == "POST":
         full_name = (request.form.get("full_name") or "").strip()
         email = (request.form.get("email") or "").strip().lower()

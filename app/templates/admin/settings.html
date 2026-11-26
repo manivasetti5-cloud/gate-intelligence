@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Platform Settings | Admin{% endblock %}
+
+{% block layout_body %}
+  {% include "admin/_sidebar.html" %}
+  <main class="col-lg-9 col-xl-10 p-4">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Platform Runtime Settings</h2>
+    <p class="text-muted mb-4">Configure student onboarding, PDF processing behavior, and default assessment parameters.</p>
+
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="gi-card p-4">
+          <form method="post" action="{{ url_for('admin.settings') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="allowReg" name="allow_student_registration" {% if settings.allow_student_registration %}checked{% endif %}>
+              <label class="form-check-label fw-medium" for="allowReg">Allow New Student Registration</label>
+              <div class="small text-muted">When disabled, new accounts cannot be created at /auth/register.</div>
+            </div>
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="autoPub" name="auto_publish_verified_pdf" {% if settings.auto_publish_verified_pdf %}checked{% endif %}>
+              <label class="form-check-label fw-medium" for="autoPub">Auto-Publish Independently Verified PDF Questions</label>
+              <div class="small text-muted">Uncertain or unverified questions are always held in Verification Queue.</div>
+            </div>
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="ocrEn" name="ocr_enabled" {% if settings.ocr_enabled %}checked{% endif %}>
+              <label class="form-check-label fw-medium" for="ocrEn">Enable OCR Fallback for Scanned PDFs</label>
+            </div>
+            <div class="row g-3 mb-4">
+              <div class="col-md-6">
+                <label class="form-label small fw-medium" for="defCount">Default Practice Question Count</label>
+                <input class="form-control" id="defCount" name="default_question_count" type="number" min="5" max="65" value="{{ settings.default_question_count }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-medium" for="defDur">Default Practice Duration (min)</label>
+                <input class="form-control" id="defDur" name="default_duration_minutes" type="number" min="10" max="180" value="{{ settings.default_duration_minutes }}">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-gi-primary px-4">Save Settings</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="gi-card p-4">
+          <h5 class="fw-semibold mb-3">Environment &amp; AI Status</h5>
+          <ul class="list-group list-group-flush small">
+            <li class="list-group-item px-0 d-flex justify-content-between">
+              <span class="text-muted">LLM Provider</span>
+              <strong>{{ settings.llm_provider }}</strong>
+            </li>
+            <li class="list-group-item px-0 d-flex justify-content-between">
+              <span class="text-muted">LLM API Key Status</span>
+              <span class="badge {{ 'bg-success' if settings.llm_configured else 'bg-warning text-dark' }}">
+                {{ 'Configured' if settings.llm_configured else 'Not Set in Env' }}
+              </span>
+            </li>
+            <li class="list-group-item px-0 d-flex justify-content-between">
+              <span class="text-muted">Primary Model</span>
+              <code>{{ settings.gemini_model }}</code>
+            </li>
+            <li class="list-group-item px-0 d-flex justify-content-between">
+              <span class="text-muted">Independent Verifier Model</span>
+              <code>{{ settings.gemini_verifier_model }}</code>
+            </li>
+            <li class="list-group-item px-0 d-flex justify-content-between">
+              <span class="text-muted">Worker Mode</span>
+              <strong>{{ 'Celery + Redis' if settings.use_celery else 'Built-in Background Runner' }}</strong>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock %}

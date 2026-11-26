@@ -27,7 +27,7 @@ from app.models.syllabus import (
     SyllabusVersion,
     Topic,
 )
-from app.models.system import AuditLog
+from app.models.system import ApplicationSetting, AuditLog
 from app.models.user import User
 from app.services.analytics_service import get_platform_analytics
 from app.services.auth_service import log_audit, role_required
@@ -212,6 +212,22 @@ def syllabus():
                 flash(f"Added concept '{name}'.", "success")
             return redirect(url_for("admin.syllabus", version_id=version_id))
 
+        if form_type == "toggle_topic_outdated":
+            version_id = request.form.get("version_id", type=int)
+            topic_id = request.form.get("topic_id", type=int)
+            tp = Topic.query.get_or_404(topic_id)
+            tp.is_outdated_in_latest = not tp.is_outdated_in_latest
+            tp.change_note = (request.form.get("change_note") or "").strip() or None
+            log_audit(
+                "admin.topic_outdated_toggle",
+                "topic",
+                tp.id,
+                {"is_outdated_in_latest": tp.is_outdated_in_latest},
+            )
+            db.session.commit()
+            flash(f"Updated syllabus status for topic '{tp.name}'.", "success")
+            return redirect(url_for("admin.syllabus", version_id=version_id))
+
     selected_version_id = request.args.get("version_id", type=int)
     selected_version = (
         SyllabusVersion.query.get(selected_version_id)
@@ -250,9 +266,10 @@ def exam_patterns():
         technical_marks = request.form.get("technical_marks", type=int) or 85
 
         existing = ExamPattern.query.filter_by(branch_id=branch_id, exam_year=exam_year).first()
+        computed_total = ga_marks + technical_marks
         if existing:
             existing.duration_minutes = duration_minutes
-            existing.total_marks = total_marks
+            existing.total_marks = computed_total
             existing.total_questions = total_questions
             existing.ga_marks = ga_marks
             existing.technical_marks = technical_marks
@@ -263,7 +280,7 @@ def exam_patterns():
                 branch_id=branch_id,
                 exam_year=exam_year,
                 duration_minutes=duration_minutes,
-                total_marks=total_marks,
+                total_marks=computed_total,
                 total_questions=total_questions,
                 ga_marks=ga_marks,
                 technical_marks=technical_marks,
@@ -405,7 +422,10 @@ def upload_paper():
         abs_path.write_bytes(raw_bytes)
 
         static_root = Path(current_app.root_path) / "static"
-        rel_path = abs_path.relative_to(static_root).as_posix()
+        try:
+            rel_path = abs_path.relative_to(static_root).as_posix()
+        except ValueError:
+            rel_path = abs_path.as_posix()
 
         paper = Paper(
             branch_id=branch.id,
@@ -519,19 +539,39 @@ def verification():
             override_answer = (request.form.get("override_answer") or "").strip()
             if override_answer:
                 if q.question_type == "MCQ":
-                    q.correct_answer_json = {"option": override_answer.upper()[:1]}
+                    opt_char = override_answer.upper()[:1]
+                    if opt_char not in ("A", "B", "C", "D"):
+                        flash("MCQ answer must be one of A, B, C, or D.", "danger")
+                        return redirect(url_for("admin.verification"))
+                    q.correct_answer_json = {"option": opt_char}
                     for opt in q.options:
-                        opt.is_correct = opt.label == q.correct_answer_json["option"]
+                        opt.is_correct = opt.label == opt_char
                 elif q.question_type == "MSQ":
-                    chosen = sorted({x.strip().upper()[:1] for x in override_answer.split(",") if x.strip()})
+                    chosen = sorted(
+                        {x.strip().upper()[:1] for x in override_answer.split(",") if x.strip()}
+                    )
+                    if not chosen or any(c not in ("A", "B", "C", "D") for c in chosen):
+                        flash("MSQ answers must be comma-separated options from A, B, C, D.", "danger")
+                        return redirect(url_for("admin.verification"))
                     q.correct_answer_json = {"options": chosen}
                     for opt in q.options:
                         opt.is_correct = opt.label in chosen
                 elif q.question_type == "NAT":
-                    val = float(override_answer)
+                    try:
+                        val = float(override_answer)
+                    except ValueError:
+                        flash("NAT answer must be a valid numeric value.", "danger")
+                        return redirect(url_for("admin.verification"))
                     q.correct_answer_json = {"value": val}
                     q.nat_min = val - 0.01
                     q.nat_max = val + 0.01
+
+            if not q.correct_answer_json:
+                flash(
+                    f"Question #{q.id} has no answer key yet. Enter the correct answer before publishing.",
+                    "warning",
+                )
+                return redirect(url_for("admin.verification"))
 
             q.verification_status = "verified"
             q.is_published = True
@@ -643,23 +683,53 @@ def analytics():
     return render_template("admin/analytics.html", metrics=metrics)
 
 
-@admin_bp.route("/module/<module_name>")
+def _get_setting(key: str, default_value):
+    row = ApplicationSetting.query.filter_by(key=key).first()
+    return row.value_json.get("value", default_value) if row else default_value
+
+
+def _set_setting(key: str, value) -> None:
+    row = ApplicationSetting.query.filter_by(key=key).first()
+    if not row:
+        row = ApplicationSetting(key=key, value_json={"value": value}, updated_by_user_id=current_user.id)
+        db.session.add(row)
+    else:
+        row.value_json = {"value": value}
+        row.updated_by_user_id = current_user.id
+
+
+@admin_bp.route("/settings", methods=["GET", "POST"])
 @role_required("admin")
-def upcoming_module(module_name: str):
-    """Graceful status view for Phase 2/3/4 admin modules prior to activation."""
-    allowed = {
-        "upload-paper": ("Question Paper Upload", "Phase 3 – PDF Extraction Pipeline"),
-        "jobs": ("Processing Jobs", "Phase 3 – Background PDF Worker"),
-        "question-bank": ("Question Bank", "Phase 2 – Historical & Generated Questions"),
-        "ai-generation": ("AI Question Generation", "Phase 3 – AI Question Generator"),
-        "verification": ("Answer Verification", "Phase 3 – Independent Verifier"),
-        "analytics": ("Platform Analytics", "Phase 4 – System Analytics"),
-        "settings": ("Settings", "Phase 3 / 4 – Runtime Settings"),
+def settings():
+    """Manage platform runtime settings stored in PostgreSQL."""
+    if request.method == "POST":
+        allow_reg = bool(request.form.get("allow_student_registration"))
+        auto_pub = bool(request.form.get("auto_publish_verified_pdf"))
+        ocr_enabled = bool(request.form.get("ocr_enabled"))
+        def_count = max(5, min(65, request.form.get("default_question_count", type=int) or 10))
+        def_dur = max(10, min(180, request.form.get("default_duration_minutes", type=int) or 25))
+
+        _set_setting("allow_student_registration", allow_reg)
+        _set_setting("auto_publish_verified_pdf", auto_pub)
+        _set_setting("ocr_enabled", ocr_enabled)
+        _set_setting("default_question_count", def_count)
+        _set_setting("default_duration_minutes", def_dur)
+
+        log_audit("admin.settings_update", "application_settings", "global", {"allow_registration": allow_reg})
+        db.session.commit()
+        flash("Platform settings saved.", "success")
+        return redirect(url_for("admin.settings"))
+
+    current_settings = {
+        "allow_student_registration": _get_setting("allow_student_registration", True),
+        "auto_publish_verified_pdf": _get_setting("auto_publish_verified_pdf", True),
+        "ocr_enabled": _get_setting("ocr_enabled", True),
+        "default_question_count": _get_setting("default_question_count", 10),
+        "default_duration_minutes": _get_setting("default_duration_minutes", 25),
+        "llm_configured": is_llm_configured(),
+        "llm_provider": current_app.config.get("LLM_PROVIDER", "gemini"),
+        "gemini_model": current_app.config.get("GEMINI_MODEL", "gemini-2.5-flash"),
+        "gemini_verifier_model": current_app.config.get("GEMINI_VERIFIER_MODEL", "gemini-2.5-pro"),
+        "use_celery": current_app.config.get("USE_CELERY", False),
     }
-    title, phase_label = allowed.get(module_name, ("Admin Module", "Upcoming Phase"))
-    return render_template(
-        "admin/module_status.html",
-        module_title=title,
-        phase_label=phase_label,
-        module_name=module_name,
-    )
+    return render_template("admin/settings.html", settings=current_settings)

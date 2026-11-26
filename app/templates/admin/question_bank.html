@@ -89,6 +89,20 @@
           </tbody>
         </table>
       </div>
+
+      {% if pagination.pages > 1 %}
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            {% if pagination.has_prev %}
+              <li class="page-item"><a class="page-link" href="{{ url_for('admin.question_bank', page=pagination.prev_num, branch_id=filters.branch_id, source_type=filters.source_type, question_type=filters.question_type) }}">Previous</a></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">Page {{ pagination.page }} of {{ pagination.pages }}</span></li>
+            {% if pagination.has_next %}
+              <li class="page-item"><a class="page-link" href="{{ url_for('admin.question_bank', page=pagination.next_num, branch_id=filters.branch_id, source_type=filters.source_type, question_type=filters.question_type) }}">Next</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+      {% endif %}
     </div>
   </main>
 {% endblock %}

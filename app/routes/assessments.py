@@ -5,6 +5,7 @@ from flask_login import current_user
 from sqlalchemy.orm import joinedload
 
 from app.models.attempt import StudentAttempt
+from app.models.question import Question, QuestionSource
 from app.models.syllabus import Chapter, Concept, Subject, Topic
 from app.models.test import Test
 from app.routes.student import _get_student_context
@@ -30,12 +31,34 @@ def configure():
     if mode not in ("concept", "chapter", "subject", "full_mock"):
         mode = "subject"
 
+    prefill = {
+        "question_source": request.args.get("question_source", "MIXED"),
+        "subject_id": request.args.get("subject_id", type=int),
+        "chapter_id": request.args.get("chapter_id", type=int),
+        "topic_id": request.args.get("topic_id", type=int),
+        "concept_id": request.args.get("concept_id", type=int),
+    }
+    if prefill["question_source"] not in ("MIXED", "PYQ", "AI_GENERATED"):
+        prefill["question_source"] = "MIXED"
+
+    branch = ctx["selected_branch"]
+    bank_stats = {"total": 0, "pyq": 0, "ai": 0}
+    if branch:
+        base_q = Question.query.join(Question.source).filter(
+            Question.branch_id == branch.id,
+            Question.is_published.is_(True),
+            Question.verification_status == "verified",
+        )
+        bank_stats["total"] = base_q.count()
+        bank_stats["pyq"] = base_q.filter(QuestionSource.source_type == "PYQ").count()
+        bank_stats["ai"] = base_q.filter(QuestionSource.source_type == "AI_GENERATED").count()
+
     subjects = (
         get_syllabus_tree(ctx["syllabus_version"].id) if ctx["syllabus_version"] else []
     )
     pattern = (
-        get_exam_pattern(ctx["selected_branch"].id, ctx["exam_year"])
-        if ctx["selected_branch"]
+        get_exam_pattern(branch.id, ctx["exam_year"])
+        if branch
         else None
     )
     return render_template(
@@ -44,6 +67,8 @@ def configure():
         mode=mode,
         subjects=subjects,
         pattern=pattern,
+        prefill=prefill,
+        bank_stats=bank_stats,
     )
 
 

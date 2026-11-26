@@ -71,8 +71,29 @@ def advisor():
         .order_by(AIRecommendation.created_at.desc())
         .first()
     )
-    if not latest_rec and branch:
-        latest_rec = generate_personalized_recommendation(current_user.id, branch.id)
+    if branch:
+        from app.models.attempt import StudentAttempt
+
+        latest_attempt = (
+            StudentAttempt.query.filter(
+                StudentAttempt.student_id == current_user.id,
+                StudentAttempt.status.in_(["submitted", "auto_submitted"]),
+            )
+            .order_by(StudentAttempt.submitted_at.desc())
+            .first()
+        )
+        needs_refresh = latest_rec is None or (
+            latest_attempt
+            and latest_attempt.submitted_at
+            and latest_rec.created_at
+            and latest_attempt.submitted_at > latest_rec.created_at
+        )
+        if needs_refresh:
+            latest_rec = generate_personalized_recommendation(
+                current_user.id,
+                branch.id,
+                attempt_id=latest_attempt.id if latest_attempt else None,
+            )
 
     return render_template("student/advisor.html", **ctx, recommendation=latest_rec)
 

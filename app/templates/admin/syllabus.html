@@ -54,7 +54,23 @@
                     <div class="fw-semibold small">{{ ch.name }}</div>
                     <div class="ms-3 small text-muted">
                       {% for tp in ch.topics %}
-                        <div>&bull; {{ tp.name }} ({{ tp.concepts|length }} concepts)</div>
+                        <div class="d-flex justify-content-between align-items-center py-1">
+                          <span>
+                            &bull; {{ tp.name }} ({{ tp.concepts|length }} concepts)
+                            {% if tp.is_outdated_in_latest %}
+                              <span class="badge bg-warning text-dark ms-1">Outdated</span>
+                            {% endif %}
+                          </span>
+                          <form method="post" action="{{ url_for('admin.syllabus') }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="form_type" value="toggle_topic_outdated">
+                            <input type="hidden" name="version_id" value="{{ selected_version.id }}">
+                            <input type="hidden" name="topic_id" value="{{ tp.id }}">
+                            <button type="submit" class="btn btn-sm btn-link p-0 text-decoration-none">
+                              {{ 'Mark Active' if tp.is_outdated_in_latest else 'Flag Outdated' }}
+                            </button>
+                          </form>
+                        </div>
                       {% endfor %}
                     </div>
                   </div>
@@ -106,8 +122,8 @@
         </div>
 
         {% if selected_version %}
-        <div class="gi-card p-4">
-          <h6 class="fw-semibold mb-3">Add Subject to {{ selected_version.branch.code }} {{ selected_version.exam_year }}</h6>
+        <div class="gi-card p-4 mb-3">
+          <h6 class="fw-semibold mb-3">Add Subject</h6>
           <form method="post" action="{{ url_for('admin.syllabus') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="form_type" value="add_subject">
@@ -125,6 +141,74 @@
             <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add Subject</button>
           </form>
         </div>
+
+        {% if subjects %}
+        <div class="gi-card p-4 mb-3">
+          <h6 class="fw-semibold mb-3">Add Chapter</h6>
+          <form method="post" action="{{ url_for('admin.syllabus') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="add_chapter">
+            <input type="hidden" name="version_id" value="{{ selected_version.id }}">
+            <div class="mb-2">
+              <select class="form-select form-select-sm" name="subject_id" required>
+                {% for s in subjects %}
+                  <option value="{{ s.id }}">{{ s.code }} – {{ s.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-2">
+              <input class="form-control form-control-sm" name="name" placeholder="Chapter Name" required>
+            </div>
+            <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add Chapter</button>
+          </form>
+        </div>
+
+        <div class="gi-card p-4 mb-3">
+          <h6 class="fw-semibold mb-3">Add Topic</h6>
+          <form method="post" action="{{ url_for('admin.syllabus') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="add_topic">
+            <input type="hidden" name="version_id" value="{{ selected_version.id }}">
+            <div class="mb-2">
+              <select class="form-select form-select-sm" name="chapter_id" required>
+                {% for s in subjects %}
+                  {% for ch in s.chapters %}
+                    <option value="{{ ch.id }}">{{ s.code }} &rsaquo; {{ ch.name }}</option>
+                  {% endfor %}
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-2">
+              <input class="form-control form-control-sm" name="name" placeholder="Topic Name" required>
+            </div>
+            <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add Topic</button>
+          </form>
+        </div>
+
+        <div class="gi-card p-4">
+          <h6 class="fw-semibold mb-3">Add Concept</h6>
+          <form method="post" action="{{ url_for('admin.syllabus') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_type" value="add_concept">
+            <input type="hidden" name="version_id" value="{{ selected_version.id }}">
+            <div class="mb-2">
+              <select class="form-select form-select-sm" name="topic_id" required>
+                {% for s in subjects %}
+                  {% for ch in s.chapters %}
+                    {% for tp in ch.topics %}
+                      <option value="{{ tp.id }}">{{ s.code }} &rsaquo; {{ tp.name }}</option>
+                    {% endfor %}
+                  {% endfor %}
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-2">
+              <input class="form-control form-control-sm" name="name" placeholder="Concept Name" required>
+            </div>
+            <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add Concept</button>
+          </form>
+        </div>
+        {% endif %}
         {% endif %}
       </div>
     </div>

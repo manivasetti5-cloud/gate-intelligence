@@ -12,11 +12,12 @@
       {% endif %}
     {% endwith %}
 
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
       <div>
         <h2 class="fw-bold mb-1" style="color: var(--gi-navy);">Configure GATE Assessment</h2>
         <p class="text-muted mb-0">
           Active Branch: <span class="badge gi-badge-branch">{{ selected_branch.code if selected_branch else 'N/A' }}</span> &middot; GATE {{ exam_year }}
+          &middot; Verified Questions Available: <strong>{{ bank_stats.total }}</strong> (PYQ: {{ bank_stats.pyq }}, AI: {{ bank_stats.ai }})
         </p>
       </div>
       <a href="{{ url_for('assessments.daily_challenge') }}" class="btn btn-outline-primary btn-sm">
@@ -24,18 +25,25 @@
       </a>
     </div>
 
+    {% if bank_stats.total == 0 %}
+      <div class="alert alert-warning small mb-4">
+        <strong>No verified questions published yet for {{ selected_branch.code if selected_branch else 'this branch' }}.</strong>
+        An administrator must upload a GATE question-paper PDF (<code>/admin/upload-paper</code>), verify pending questions, or generate AI questions before tests can be launched.
+      </div>
+    {% endif %}
+
     <ul class="nav nav-pills mb-4 gap-2">
       <li class="nav-item">
-        <a class="nav-link {% if mode == 'concept' %}active{% endif %}" href="{{ url_for('assessments.configure', mode='concept') }}">Concept-Wise</a>
+        <a class="nav-link {% if mode == 'concept' %}active{% endif %}" href="{{ url_for('assessments.configure', mode='concept', question_source=prefill.question_source) }}">Concept-Wise</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link {% if mode == 'chapter' %}active{% endif %}" href="{{ url_for('assessments.configure', mode='chapter') }}">Chapter-Wise</a>
+        <a class="nav-link {% if mode == 'chapter' %}active{% endif %}" href="{{ url_for('assessments.configure', mode='chapter', question_source=prefill.question_source) }}">Chapter-Wise</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link {% if mode == 'subject' %}active{% endif %}" href="{{ url_for('assessments.configure', mode='subject') }}">Subject-Wise</a>
+        <a class="nav-link {% if mode == 'subject' %}active{% endif %}" href="{{ url_for('assessments.configure', mode='subject', question_source=prefill.question_source) }}">Subject-Wise</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link {% if mode == 'full_mock' %}active{% endif %}" href="{{ url_for('assessments.configure', mode='full_mock') }}">Full-Length Mock</a>
+        <a class="nav-link {% if mode == 'full_mock' %}active{% endif %}" href="{{ url_for('assessments.configure', mode='full_mock', question_source=prefill.question_source) }}">Full-Length Mock</a>
       </li>
     </ul>
 
@@ -59,10 +67,10 @@
           <div class="row g-3 mb-4">
             <div class="col-md-6">
               <label class="form-label small fw-medium" for="subject_id">Subject</label>
-              <select class="form-select" id="subject_id" name="subject_id" {% if mode in ('subject', 'chapter', 'concept') %}required{% endif %}>
-                <option value="">-- Select Subject --</option>
+              <select class="form-select" id="subject_id" name="subject_id" {% if mode in ('chapter', 'concept') %}required{% endif %}>
+                <option value="">-- All Subjects (or pick one) --</option>
                 {% for s in subjects %}
-                  <option value="{{ s.id }}">{{ s.code }} – {{ s.name }}</option>
+                  <option value="{{ s.id }}" {% if prefill.subject_id == s.id %}selected{% endif %}>{{ s.code }} – {{ s.name }}</option>
                 {% endfor %}
               </select>
             </div>
@@ -96,9 +104,9 @@
           <div class="col-md-4">
             <label class="form-label small fw-medium" for="question_source">Question Source</label>
             <select class="form-select" id="question_source" name="question_source">
-              <option value="MIXED" selected>Mixed (All Verified Sources)</option>
-              <option value="PYQ">Historical PYQs Only</option>
-              <option value="AI_GENERATED">AI-Generated Only</option>
+              <option value="MIXED" {% if prefill.question_source == 'MIXED' %}selected{% endif %}>Mixed (All Verified Sources)</option>
+              <option value="PYQ" {% if prefill.question_source == 'PYQ' %}selected{% endif %}>Historical PYQs Only</option>
+              <option value="AI_GENERATED" {% if prefill.question_source == 'AI_GENERATED' %}selected{% endif %}>AI-Generated Only</option>
             </select>
           </div>
 
@@ -151,7 +159,7 @@
           {% endif %}
         </div>
 
-        <button type="submit" class="btn btn-gi-primary btn-lg px-4">
+        <button type="submit" class="btn btn-gi-primary btn-lg px-4" {% if bank_stats.total == 0 %}disabled{% endif %}>
           <i class="bi bi-play-circle me-2"></i>Start Timed Examination
         </button>
       </form>
@@ -161,13 +169,14 @@
 
 {% block scripts %}
 <script>
-(function() {
+(async function() {
   const subjEl = document.getElementById("subject_id");
   const chapEl = document.getElementById("chapter_id");
   const topicEl = document.getElementById("topic_id");
   const conceptEl = document.getElementById("concept_id");
+  const prefill = {{ prefill | tojson }};
 
-  async function populateSelect(el, paramName, paramVal, defaultLabel) {
+  async function populateSelect(el, paramName, paramVal, defaultLabel, selectedId = null) {
     if (!el) return;
     el.innerHTML = `<option value="">${defaultLabel}</option>`;
     if (!paramVal) return;
@@ -177,6 +186,9 @@
       const opt = document.createElement("option");
       opt.value = item.id;
       opt.textContent = item.name;
+      if (selectedId && Number(selectedId) === Number(item.id)) {
+        opt.selected = true;
+      }
       el.appendChild(opt);
     }
   }
@@ -198,6 +210,16 @@
     topicEl.addEventListener("change", async () => {
       await populateSelect(conceptEl, "topic_id", topicEl.value, "-- Any Concept in Topic --");
     });
+  }
+
+  if (prefill.subject_id && chapEl) {
+    await populateSelect(chapEl, "subject_id", prefill.subject_id, "-- Select Chapter --", prefill.chapter_id);
+  }
+  if (prefill.chapter_id && topicEl) {
+    await populateSelect(topicEl, "chapter_id", prefill.chapter_id, "-- Any Topic in Chapter --", prefill.topic_id);
+  }
+  if (prefill.topic_id && conceptEl) {
+    await populateSelect(conceptEl, "topic_id", prefill.topic_id, "-- Any Concept in Topic --", prefill.concept_id);
   }
 })();
 </script>

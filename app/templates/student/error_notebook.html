@@ -46,7 +46,26 @@
             </div>
             <span class="badge {{ 'bg-success' if entry.status == 'mastered' else 'bg-warning text-dark' }}">{{ entry.status.replace('_', ' ').title() }}</span>
           </div>
-          <p class="mb-3" style="white-space: pre-wrap;">{{ q.statement_md }}</p>
+          <p class="mb-2" style="white-space: pre-wrap;">{{ q.statement_md }}</p>
+          {% if q.images %}
+            <div class="mb-2 d-flex flex-wrap gap-2">
+              {% for img in q.images %}
+                <img src="{{ url_for('static', filename=img.file_path) }}" class="img-fluid rounded border" style="max-height: 220px;" alt="{{ img.caption or 'Question figure' }}">
+              {% endfor %}
+            </div>
+          {% endif %}
+          <div class="mb-3">
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#errAns{{ entry.id }}">View Correct Answer &amp; Solution</button>
+            <div class="collapse mt-2" id="errAns{{ entry.id }}">
+              <div class="p-3 bg-light rounded border small">
+                <strong>Correct Answer:</strong>
+                {% if q.question_type == 'MCQ' %}{{ q.correct_answer_json.get('option') }}{% elif q.question_type == 'MSQ' %}{{ q.correct_answer_json.get('options', [])|join(', ') }}{% else %}{{ q.correct_answer_json.get('value') }}{% endif %}
+                {% if q.explanation_json and q.explanation_json.get('step_by_step') %}
+                  <div class="mt-1">{{ q.explanation_json.get('step_by_step') }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
           <form method="post" action="{{ url_for('questions.update_error_note', entry_id=entry.id) }}" class="row g-2 align-items-center">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="col-md-7">

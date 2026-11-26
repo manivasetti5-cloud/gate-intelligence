@@ -46,6 +46,9 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="question_id" value="{{ q.id }}">
           <div class="col-md-6">
+            {% if not q.correct_answer_json %}
+              <div class="small text-danger mb-1">No automated answer key found — enter the correct answer before publishing.</div>
+            {% endif %}
             <input class="form-control form-control-sm" name="override_answer" placeholder="Confirm or override answer (e.g. B, or A,C, or 12.5)" value="{% if q.question_type == 'MCQ' %}{{ q.correct_answer_json.get('option', '') }}{% elif q.question_type == 'MSQ' %}{{ q.correct_answer_json.get('options', [])|join(',') }}{% else %}{{ q.correct_answer_json.get('value', '') }}{% endif %}">
           </div>
           <div class="col-auto">

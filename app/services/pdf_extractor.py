@@ -18,6 +18,13 @@ class ExtractedPage:
     backend: str = "pymupdf"
 
 
+def _safe_img_ref(out_file: Path, static_root: Path) -> str:
+    try:
+        return out_file.relative_to(static_root).as_posix()
+    except ValueError:
+        return out_file.as_posix()
+
+
 def _try_pymupdf_extract(pdf_path: Path, output_dir: Path, static_root: Path) -> list[ExtractedPage] | None:
     """Attempt extraction with PyMuPDF (fitz); returns None if native DLL is unavailable or blocked."""
     try:
@@ -40,7 +47,7 @@ def _try_pymupdf_extract(pdf_path: Path, output_dir: Path, static_root: Path) ->
                 img_name = f"page_{page_idx}_fig_{img_idx}.{ext}"
                 out_file = output_dir / img_name
                 out_file.write_bytes(base["image"])
-                rel_path = out_file.relative_to(static_root).as_posix()
+                rel_path = _safe_img_ref(out_file, static_root)
                 saved_imgs.append(rel_path)
 
             # If page has little text (possible scan), render page PNG for OCR/crop preservation
@@ -48,7 +55,7 @@ def _try_pymupdf_extract(pdf_path: Path, output_dir: Path, static_root: Path) ->
                 pix = page.get_pixmap(dpi=200)
                 scan_file = output_dir / f"page_{page_idx}_render.png"
                 pix.save(str(scan_file))
-                rel_path = scan_file.relative_to(static_root).as_posix()
+                rel_path = _safe_img_ref(scan_file, static_root)
                 saved_imgs.append(rel_path)
 
             pages.append(
@@ -83,7 +90,7 @@ def _pypdf_extract(pdf_path: Path, output_dir: Path, static_root: Path) -> list[
                 try:
                     with Image.open(out_file) as im:
                         if im.width >= 20 and im.height >= 20:
-                            saved_imgs.append(out_file.relative_to(static_root).as_posix())
+                            saved_imgs.append(_safe_img_ref(out_file, static_root))
                 except Exception:
                     out_file.unlink(missing_ok=True)
         except Exception:

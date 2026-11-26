@@ -137,9 +137,10 @@ def _seed_test_only_questions() -> None:
 
 
 @pytest.fixture()
-def app():
+def app(tmp_path):
     """Create application configured for automated testing."""
     application = create_app("testing")
+    application.config["UPLOAD_FOLDER"] = str(tmp_path / "uploads")
     with application.app_context():
         db.drop_all()
         db.create_all()

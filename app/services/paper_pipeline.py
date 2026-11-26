@@ -48,7 +48,8 @@ def process_extraction_job(job_id: int) -> ExtractionJob:
     db.session.commit()
 
     static_root = Path(current_app.root_path) / "static"
-    pdf_abs_path = static_root / pv.file_path
+    pv_path = Path(pv.file_path)
+    pdf_abs_path = pv_path if pv_path.is_absolute() else (static_root / pv_path)
     out_dir = Path(current_app.config["UPLOAD_FOLDER"]) / "extracted" / f"job_{job.id}"
 
     try:
@@ -64,7 +65,10 @@ def process_extraction_job(job_id: int) -> ExtractionJob:
         for pg in pages:
             if len((pg.text or "").strip()) < 40 and pg.image_paths:
                 for rel_img in pg.image_paths:
-                    ocr_text, ok, note = run_ocr_on_image(static_root / rel_img)
+                    img_p = Path(rel_img)
+                    ocr_text, ok, note = run_ocr_on_image(
+                        img_p if img_p.is_absolute() else (static_root / img_p)
+                    )
                     if ok and ocr_text:
                         pg.text = (pg.text + "\n" + ocr_text).strip()
                         pg.used_ocr = True
@@ -230,7 +234,10 @@ def process_extraction_job(job_id: int) -> ExtractionJob:
                     )
                     db.session.flush()
                     for img_rel in seg["image_paths"]:
-                        dhash = compute_image_dhash(static_root / img_rel)
+                        img_p = Path(img_rel)
+                        dhash = compute_image_dhash(
+                            img_p if img_p.is_absolute() else (static_root / img_p)
+                        )
                         db.session.add(
                             QuestionImage(
                                 question_id=q.id,

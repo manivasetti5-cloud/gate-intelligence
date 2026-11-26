@@ -50,9 +50,14 @@ def enqueue_paper_job(app, job_id: int, run_async: bool = True) -> None:
 
     def _runner():
         with app.app_context():
-            from app.services.paper_pipeline import process_extraction_job
+            try:
+                from app.services.paper_pipeline import process_extraction_job
 
-            process_extraction_job(job_id)
+                process_extraction_job(job_id)
+            finally:
+                from app.extensions import db
+
+                db.session.remove()
 
     t = threading.Thread(target=_runner, daemon=True)
     t.start()
@@ -72,9 +77,14 @@ def enqueue_generation_job(app, job_id: int, run_async: bool = True) -> None:
 
     def _runner():
         with app.app_context():
-            from app.services.ai_question_generator import run_generation_job
+            try:
+                from app.services.ai_question_generator import run_generation_job
 
-            run_generation_job(job_id)
+                run_generation_job(job_id)
+            finally:
+                from app.extensions import db
+
+                db.session.remove()
 
     t = threading.Thread(target=_runner, daemon=True)
     t.start()

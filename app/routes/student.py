@@ -179,6 +179,31 @@ def profile():
     return render_template("student/profile.html", **ctx)
 
 
+@student_bp.route("/change-password", methods=["POST"])
+@role_required("student")
+def change_password():
+    """Verify current password and update student password."""
+    current_pw = request.form.get("current_password") or ""
+    new_pw = request.form.get("new_password") or ""
+    confirm_pw = request.form.get("confirm_password") or ""
+
+    if not current_user.check_password(current_pw):
+        flash("Current password is incorrect.", "danger")
+        return redirect(url_for("student.profile"))
+    if len(new_pw) < 8:
+        flash("New password must be at least 8 characters long.", "danger")
+        return redirect(url_for("student.profile"))
+    if new_pw != confirm_pw:
+        flash("New passwords do not match.", "danger")
+        return redirect(url_for("student.profile"))
+
+    current_user.set_password(new_pw)
+    log_audit("student.password_change", "user", current_user.id)
+    db.session.commit()
+    flash("Password updated successfully.", "success")
+    return redirect(url_for("student.profile"))
+
+
 @student_bp.route("/switch-branch", methods=["POST"])
 @role_required("student")
 def switch_branch():

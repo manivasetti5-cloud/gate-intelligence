@@ -54,5 +54,27 @@
         <button type="submit" class="btn btn-gi-primary px-4">Save Changes</button>
       </form>
     </div>
+
+    <div class="gi-card p-4 mt-4" style="max-width: 680px;">
+      <h5 class="fw-semibold mb-3">Change Password</h5>
+      <form method="post" action="{{ url_for('student.change_password') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="mb-3">
+          <label class="form-label small fw-medium" for="current_password">Current Password</label>
+          <input class="form-control" id="current_password" name="current_password" type="password" required>
+        </div>
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-medium" for="new_password">New Password (min 8 chars)</label>
+            <input class="form-control" id="new_password" name="new_password" type="password" minlength="8" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-medium" for="confirm_password">Confirm New Password</label>
+            <input class="form-control" id="confirm_password" name="confirm_password" type="password" minlength="8" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-outline-dark">Update Password</button>
+      </form>
+    </div>
   </main>
 {% endblock %}

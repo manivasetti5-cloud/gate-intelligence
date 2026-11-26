@@ -50,27 +50,42 @@
             </h2>
             <div id="collapse-{{ subj.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#syllabusAccordion">
               <div class="accordion-body">
+                <div class="mb-3 d-flex justify-content-end">
+                  <a href="{{ url_for('assessments.configure', mode='subject', subject_id=subj.id) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-play-fill me-1"></i>Practice {{ subj.name }}
+                  </a>
+                </div>
                 {% for ch in subj.chapters %}
                   <div class="mb-3 pb-2 border-bottom">
-                    <h6 class="fw-bold mb-2" style="color: var(--gi-navy);">
-                      {{ ch.name }}
-                      {% if ch.is_outdated_in_latest %}
-                        <span class="badge bg-warning text-dark ms-1">Updated/Deprecated</span>
-                      {% endif %}
-                    </h6>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <h6 class="fw-bold mb-0" style="color: var(--gi-navy);">
+                        {{ ch.name }}
+                        {% if ch.is_outdated_in_latest %}
+                          <span class="badge bg-warning text-dark ms-1">Updated/Deprecated</span>
+                        {% endif %}
+                      </h6>
+                      <a href="{{ url_for('assessments.configure', mode='chapter', subject_id=subj.id, chapter_id=ch.id) }}" class="btn btn-sm btn-link text-decoration-none p-0">Chapter Test &rarr;</a>
+                    </div>
                     <div class="row g-2">
                       {% for tp in ch.topics %}
                         <div class="col-md-6">
                           <div class="p-2 rounded bg-light border h-100">
-                            <div class="fw-semibold small mb-1">
-                              {{ tp.name }}
-                              {% if tp.is_outdated_in_latest %}
-                                <span class="badge bg-warning text-dark ms-1">Outdated</span>
-                              {% endif %}
+                            <div class="fw-semibold small mb-1 d-flex justify-content-between align-items-center">
+                              <span>
+                                {{ tp.name }}
+                                {% if tp.is_outdated_in_latest %}
+                                  <span class="badge bg-warning text-dark ms-1">Outdated</span>
+                                {% endif %}
+                              </span>
+                              <a href="{{ url_for('assessments.configure', mode='concept', subject_id=subj.id, chapter_id=ch.id, topic_id=tp.id) }}" class="small text-decoration-none">Test</a>
                             </div>
                             <ul class="small text-muted mb-0 ps-3">
                               {% for cp in tp.concepts %}
-                                <li>{{ cp.name }}</li>
+                                <li>
+                                  <a class="text-decoration-none text-muted" href="{{ url_for('assessments.configure', mode='concept', subject_id=subj.id, chapter_id=ch.id, topic_id=tp.id, concept_id=cp.id) }}">
+                                    {{ cp.name }}
+                                  </a>
+                                </li>
                               {% endfor %}
                             </ul>
                           </div>

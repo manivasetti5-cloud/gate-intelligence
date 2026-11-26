@@ -10,8 +10,8 @@ QUESTION_HEADER_RE = re.compile(
     re.IGNORECASE,
 )
 OPTION_RE = re.compile(
-    r"(?:^|\n)\s*\(?([A-D])\)[\.\s]+(.*?)(?=(?:\n\s*\(?[A-D]\)[\.\s]+)|\Z)",
-    re.DOTALL,
+    r"(?:^|\n)\s*(?:\(?([A-D])\)|([A-D])[\.\)])\s+(.*?)(?=(?:\n\s*(?:\(?[A-D]\)|[A-D][\.\)])\s+)|\Z)",
+    re.DOTALL | re.IGNORECASE,
 )
 MARKS_RE = re.compile(r"\[?\s*([12])\s*Marks?\s*\]?", re.IGNORECASE)
 
@@ -56,8 +56,8 @@ def segment_pages_into_questions(pages: list[ExtractedPage]) -> list[dict[str, A
             if len(opt_matches) >= 2:
                 statement = block[: opt_matches[0].start()].strip()
                 for om in opt_matches:
-                    opt_label = om.group(1).upper()
-                    opt_text = re.sub(r"\s+", " ", om.group(2)).strip()
+                    opt_label = (om.group(1) or om.group(2)).upper()
+                    opt_text = re.sub(r"\s+", " ", om.group(3)).strip()
                     options.append({"label": opt_label, "text": opt_text})
 
             statement_clean = MARKS_RE.sub("", statement).strip()
